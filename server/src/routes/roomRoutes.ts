@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { createRoom, joinRoom, getRoomInfo, getRoomsBatch, updateRoomPreview } from '../services/roomService.js';
+import { createRoom, joinRoom, getRoomInfo, getRoomsBatch, updateRoomPreview, updateRoomSnapshot } from '../services/roomService.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
 const router = Router();
@@ -56,6 +56,22 @@ router.post('/rooms/:code/preview', async (req: Request, res: Response, next: Ne
       throw new ApiError(400, 'previewUrl is required', 'VALIDATION_ERROR');
     }
     const updated = await updateRoomPreview(roomCode, previewUrl);
+    res.json({ success: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/rooms/:code/snapshot — Save spatial elements snapshot data
+router.post('/rooms/:code/snapshot', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const codeParam = req.params.code;
+    const roomCode = Array.isArray(codeParam) ? codeParam[0] : codeParam;
+    const { snapshot } = req.body || {};
+    if (!snapshot) {
+      throw new ApiError(400, 'snapshot object is required', 'VALIDATION_ERROR');
+    }
+    const updated = await updateRoomSnapshot(roomCode, snapshot);
     res.json({ success: updated });
   } catch (err) {
     next(err);

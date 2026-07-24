@@ -6,6 +6,8 @@ import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { useSavedRooms } from '../hooks/useSavedRooms';
 import { CreateRoomModal } from '../components/CreateRoomModal';
+import { MiniCanvasPreview } from '../components/MiniCanvasPreview';
+import type { MiniCanvasSnapshot } from '../components/MiniCanvasPreview';
 import { apiRequest } from '../services/api';
 
 function formatRelativeTime(timestamp: number): string {
@@ -26,21 +28,22 @@ export const DashboardPage: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [liveBatch, setLiveBatch] = useState<Record<string, { title?: string; previewUrl?: string; activeCount?: number }>>({});
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [liveBatch, setLiveBatch] = useState<Record<string, { title?: string; previewUrl?: string; snapshot?: MiniCanvasSnapshot; activeCount?: number }>>({});
 
   // Sync live metadata for saved rooms from server
   useEffect(() => {
     if (savedRooms.length === 0) return;
     const fetchBatch = async () => {
       const codes = savedRooms.map(r => r.code);
-      const res = await apiRequest<{ rooms: { code: string; title: string; previewUrl?: string; activeCount: number }[] }>('/api/rooms/batch', {
+      const res = await apiRequest<{ rooms: { code: string; title: string; previewUrl?: string; snapshot?: MiniCanvasSnapshot; activeCount: number }[] }>('/api/rooms/batch', {
         method: 'POST',
         body: JSON.stringify({ codes })
       });
       if (res.ok && res.data?.rooms) {
-        const map: Record<string, { title?: string; previewUrl?: string; activeCount?: number }> = {};
+        const map: Record<string, { title?: string; previewUrl?: string; snapshot?: MiniCanvasSnapshot; activeCount?: number }> = {};
         res.data.rooms.forEach(r => {
-          map[r.code] = { title: r.title, previewUrl: r.previewUrl, activeCount: r.activeCount };
+          map[r.code] = { title: r.title, previewUrl: r.previewUrl, snapshot: r.snapshot, activeCount: r.activeCount };
         });
         setLiveBatch(map);
       }
@@ -146,7 +149,7 @@ export const DashboardPage: React.FC = () => {
             My Spatial Canvases
           </h1>
           <p style={{ color: 'var(--muted)', margin: 0, fontSize: '15px' }}>
-            Live visual previews of your collaborative code & idea whiteboards.
+            Live vector mini previews of your collaborative code & idea whiteboards.
           </p>
         </div>
 
@@ -192,76 +195,35 @@ export const DashboardPage: React.FC = () => {
               const liveData = liveBatch[room.code];
               const displayTitle = liveData?.title || room.title || `Workspace #${room.code}`;
               const previewImage = liveData?.previewUrl;
+              const snapshotData = liveData?.snapshot;
               const activeCount = liveData?.activeCount || 0;
+              const isHovered = hoveredCard === room.code;
 
               return (
                 <div
                   key={room.code}
                   className="glass-card"
+                  onMouseEnter={() => setHoveredCard(room.code)}
+                  onMouseLeave={() => setHoveredCard(null)}
                   style={{
                     overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
-                    transition: 'transform 0.2s ease, border-color 0.2s ease',
+                    transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease',
+                    transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
+                    borderColor: isHovered ? 'var(--accent-border)' : 'var(--border)',
+                    boxShadow: isHovered
+                      ? '0 24px 60px rgba(0,0,0,0.65), 0 0 32px rgba(34, 211, 238, 0.15)'
+                      : 'var(--shadow-heavy)',
                   }}
                 >
-                  {/* Real Spatial Canvas Preview Box */}
-                  <div
-                    style={{
-                      height: '160px',
-                      background: 'var(--bg)',
-                      position: 'relative',
-                      borderBottom: '1px solid var(--border)',
-                      overflow: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {previewImage ? (
-                      /* Actual Canvas Thumbnail Snapshot */
-                      <img
-                        src={previewImage}
-                        alt={displayTitle}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          filter: 'brightness(0.9)',
-                        }}
-                      />
-                    ) : (
-                      /* Placeholder dot grid when no preview captured yet */
-                      <div
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.15) 1px, transparent 1px)',
-                          backgroundSize: '16px 16px',
-                          display: 'grid',
-                          placeItems: 'center',
-                          opacity: 0.6,
-                        }}
-                      >
-                        <span style={{ fontSize: '24px', opacity: 0.4 }}>✨</span>
-                      </div>
-                    )}
-
-                    {/* Monospace Code Badge */}
-                    <span
-                      className="code-badge"
-                      style={{
-                        position: 'absolute',
-                        top: '12px',
-                        right: '12px',
-                        background: 'rgba(9, 9, 11, 0.85)',
-                        backdropFilter: 'blur(8px)',
-                        zIndex: 3,
-                      }}
-                    >
-                      #{room.code}
-                    </span>
-                  </div>
+                  {/* Real Vector / Snapshot Canvas Preview Box */}
+                  <MiniCanvasPreview
+                    previewUrl={previewImage}
+                    snapshot={snapshotData}
+                    roomCode={room.code}
+                    isHovered={isHovered}
+                  />
 
                   {/* Card Body */}
                   <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>

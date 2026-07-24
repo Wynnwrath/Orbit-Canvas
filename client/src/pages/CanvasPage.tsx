@@ -90,12 +90,26 @@ export const CanvasPage: React.FC = () => {
     };
   }, [mode]);
 
-  // Canvas Snapshot helper to upload real room thumbnail
+  // Spatial Element Snapshot Sync helper
+  const syncSpatialSnapshot = useCallback(async () => {
+    const snapshot = {
+      cards: cards.map(c => ({ id: c.id, filename: c.filename, rawText: c.rawText, x: c.x, y: c.y })),
+      strokes: strokes.map(s => ({ id: s.id, d: s.d })),
+      stickies: stickies.map(st => ({ id: st.id, title: st.title, x: st.x, y: st.y })),
+    };
+
+    await apiRequest(`/api/rooms/${roomCode}/snapshot`, {
+      method: 'POST',
+      body: JSON.stringify({ snapshot }),
+    });
+  }, [roomCode, cards, strokes, stickies]);
+
+  // Canvas Image Snapshot helper to upload real room thumbnail
   const saveCanvasPreview = useCallback(async () => {
     if (!viewportRef.current) return;
     try {
       const canvas = await html2canvas(viewportRef.current, {
-        backgroundColor: '#070913',
+        backgroundColor: '#09090b',
         useCORS: true,
         logging: false,
         scale: 0.5,
@@ -119,13 +133,14 @@ export const CanvasPage: React.FC = () => {
     }
   }, [roomCode]);
 
-  // Trigger canvas preview auto-save after user interaction
+  // Trigger spatial vector snapshot & canvas image preview save
   useEffect(() => {
     const timer = setTimeout(() => {
+      syncSpatialSnapshot();
       saveCanvasPreview();
-    }, 4000);
+    }, 3000);
     return () => clearTimeout(timer);
-  }, [cards, strokes, stickies, saveCanvasPreview]);
+  }, [cards, strokes, stickies, syncSpatialSnapshot, saveCanvasPreview]);
 
   // Zoom handlers
   const handleZoomIn = () => setZoom(z => Math.min(2.5, +(z + 0.15).toFixed(2)));
