@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { CanvasBg } from '../components/CanvasBg';
 import { TopBar } from '../components/TopBar';
@@ -22,8 +22,7 @@ import { usePresence } from '../hooks/usePresence';
 import { useSyncInk } from '../hooks/useSyncInk';
 import { useSyncCards } from '../hooks/useSyncCards';
 import { apiRequest } from '../services/api';
-
-const STARTER_CODE = `export function Cursor({ name, color, x, y }: CursorProps) {\n  return (\n    <g transform={\`translate(\${x}, \${y})\`}>\n      <path d="M4 2 L20 12 L12.5 13.5 L9 21 Z" fill={color} />\n      <text x={16} y={14} className="tag">{name}</text>\n    </g>\n  );\n}`;
+import { captureCanvasRegion } from '../utils/snapshotUtils';
 
 export const CanvasPage: React.FC = () => {
   const { roomCode = '8F2A' } = useParams<{ roomCode: string }>();
@@ -31,6 +30,7 @@ export const CanvasPage: React.FC = () => {
   const userName = searchParams.get('name') || 'You';
 
   const { toastMessage, showToast } = useToast();
+  const viewportRef = useRef<HTMLDivElement>(null);
 
   // Socket Connection Hook
   const { socket, status: socketStatus } = useSocket(roomCode, userName);
@@ -42,17 +42,8 @@ export const CanvasPage: React.FC = () => {
   const [zTop, setZTop] = useState(40);
   const [zoom, setZoom] = useState<number>(1.0);
 
-  // Cards state
-  const [cards, setCards] = useState<CodeCardData[]>([
-    {
-      id: 'card1',
-      filename: 'Component.tsx',
-      rawText: STARTER_CODE,
-      x: window.innerWidth * 0.16,
-      y: window.innerHeight * 0.24,
-      zIndex: 20,
-    },
-  ]);
+  // Cards state — Clean start (no default starter cards)
+  const [cards, setCards] = useState<CodeCardData[]>([]);
 
   // Sync Cards Hook
   const { emitCardMove, emitCardAdd, emitCardUpdate } = useSyncCards(socket, setCards);
@@ -167,11 +158,11 @@ export const CanvasPage: React.FC = () => {
       showToast('Pen armed — drag to draw. Esc to stop.');
     } else if (tool === 'lasso') {
       setMode('lasso');
-      showToast('Lasso armed — drag a box around content.');
+      showToast('Lasso armed — drag a box around drawings or code.');
     } else if (tool === 'trash') {
       setStrokes([]);
       setStickies([]);
-      setCards(prev => prev.filter(c => !c.isExtra));
+      setCards([]);
       emitClearCanvas();
       showToast('Canvas cleared');
     } else if (tool === 'code') {
@@ -269,7 +260,7 @@ export const CanvasPage: React.FC = () => {
         setLassoRect({ x: curX, y: curY, w, h, visible: true, analyzing: false });
       };
 
-      const handleUp = (ev: PointerEvent) => {
+      const handleUp = async (ev: PointerEvent) => {
         window.removeEventListener('pointermove', handleMove);
         window.removeEventListener('pointerup', handleUp);
         window.removeEventListener('pointercancel', handleUp);
@@ -280,33 +271,45 @@ export const CanvasPage: React.FC = () => {
         const finalH = Math.abs(endY - sy);
 
         if (finalW > 30 && finalH > 30) {
+          const lassoBounds = {
+            x: Math.min(sx, endX),
+            y: Math.min(sy, endY),
+            w: finalW,
+            h: finalH,
+          };
+
           // Trigger analyzing animation
           setLassoRect(prev => ({ ...prev, analyzing: true }));
-          setTimeout(async () => {
-            const finalLasso = {
-              left: Math.min(sx, endX),
-              top: Math.min(sy, endY),
-              right: Math.max(sx, endX),
-              bottom: Math.max(sy, endY),
-            };
 
-            let hitCard: CodeCardData | null = null;
-            cards.forEach(card => {
-              const cardRight = card.x + 380;
-              const cardBottom = card.y + 240;
-              const isOverlapping = !(
-                finalLasso.right < card.x ||
-                finalLasso.left > cardRight ||
-                finalLasso.bottom < card.y ||
-                finalLasso.top > cardBottom
-              );
-              if (isOverlapping) hitCard = card;
-            });
+          // Capture region screenshot from spatial viewport
+          let regionSnapshot: string | null = null;
+          if (viewportRef.current) {
+            regionSnapshot = await captureCanvasRegion(lassoBounds, viewportRef.current);
+          }
 
-            setLassoRect({ x: 0, y: 0, w: 0, h: 0, visible: false, analyzing: false });
-            await spawnSticky(finalLasso.right, finalLasso.top, hitCard);
-            setMode('idle');
-          }, 1000);
+          const finalLasso = {
+            left: lassoBounds.x,
+            top: lassoBounds.y,
+            right: lassoBounds.x + lassoBounds.w,
+            bottom: lassoBounds.y + lassoBounds.h,
+          };
+
+          let hitCard: CodeCardData | null = null;
+          cards.forEach(card => {
+            const cardRight = card.x + 380;
+            const cardBottom = card.y + 240;
+            const isOverlapping = !(
+              finalLasso.right < card.x ||
+              finalLasso.left > cardRight ||
+              finalLasso.bottom < card.y ||
+              finalLasso.top > cardBottom
+            );
+            if (isOverlapping) hitCard = card;
+          });
+
+          setLassoRect({ x: 0, y: 0, w: 0, h: 0, visible: false, analyzing: false });
+          await spawnSticky(finalLasso.right, finalLasso.top, hitCard, regionSnapshot);
+          setMode('idle');
         } else {
           setLassoRect({ x: 0, y: 0, w: 0, h: 0, visible: false, analyzing: false });
           setMode('idle');
@@ -319,7 +322,12 @@ export const CanvasPage: React.FC = () => {
     }
   };
 
-  const spawnSticky = async (rRight: number, rTop: number, hitCard: CodeCardData | null) => {
+  const spawnSticky = async (
+    rRight: number,
+    rTop: number,
+    hitCard: CodeCardData | null,
+    imageSnapshot?: string | null
+  ) => {
     let spawnX = rRight + 18;
     if (spawnX + 352 > window.innerWidth / zoom - 12) {
       spawnX = Math.max(12, rRight - 370);
@@ -328,13 +336,14 @@ export const CanvasPage: React.FC = () => {
     const newZ = zTop + 1;
     setZTop(newZ);
 
-    showToast('Analyzing code with Gemini AI...');
+    showToast('Analyzing drawing & code with Gemini AI...');
 
     const res = await apiRequest<{ title: string; bodyHtml: string; tip?: string }>('/api/ai/analyze', {
       method: 'POST',
       body: JSON.stringify({
         content: hitCard ? hitCard.rawText : '',
-        context: hitCard ? hitCard.filename : '',
+        context: hitCard ? hitCard.filename : 'drawing region',
+        image: imageSnapshot || undefined,
         roomCode,
       })
     });
@@ -388,6 +397,7 @@ export const CanvasPage: React.FC = () => {
 
       {/* Spatial Canvas Container with Zoom Transform */}
       <div
+        ref={viewportRef}
         className="canvas-spatial-viewport"
         style={{
           transform: `scale(${zoom})`,
