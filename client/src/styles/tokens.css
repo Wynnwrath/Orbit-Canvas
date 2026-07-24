@@ -1,0 +1,54 @@
+/* client/src/styles/tokens.css — Frozen design tokens from source prototype */
+:root {
+  /* ── Surfaces ── */
+  --bg:           #09090b;
+  --fg:           #fafafa;
+  --ink:          #e4e4e7;
+  --muted:        #a1a1aa;
+  --faint:        #71717a;
+  --border:       rgba(255, 255, 255, 0.09);
+  --glass:        rgba(23, 23, 27, 0.55);
+  --card:         rgba(20, 20, 24, 0.75);
+
+  /* ── Accent palette ── */
+  --accent:       #22d3ee;
+  --accent-dim:   rgba(34, 211, 238, 0.13);
+  --accent-border:rgba(34, 211, 238, 0.35);
+  --accent-ink:   #05262c;
+
+  /* ── Semantic colors ── */
+  --live:   #34d399;   /* presence / multiplayer */
+  --violet: #a78bfa;   /* peer-C, decorative */
+  --red:    #f87171;   /* dot-close, destructive */
+  --amber:  #fbbf24;   /* dot-minimize */
+
+  /* ── Syntax highlighting ── */
+  --syn-k: #c4b5fd;    /* keywords */
+  --syn-s: #86efac;    /* strings */
+  --syn-t: #67e8f9;    /* types */
+  --syn-n: #fbbf24;    /* numbers */
+  --syn-c: #71717a;    /* comments */
+
+  /* ── Typography ── */
+  --font-ui:   -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+  /* ── Spacing & Radii ── */
+  --radius-sm:  7px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  18px;
+  --radius-pill: 999px;
+
+  /* ── Shadows ── */
+  --shadow-card:  0 20px 60px rgba(0,0,0,.55), 0 0 28px rgba(34,211,238,.06);
+  --shadow-heavy: 0 30px 80px rgba(0,0,0,.55);
+  --shadow-topbar:0 10px 34px rgba(0,0,0,.45);
+
+  /* ── Motion ── */
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --dur-fast:    120ms;
+  --dur-normal:  150ms;
+  --dur-pop:     260ms;
+  --dur-spin:    700ms;
+}

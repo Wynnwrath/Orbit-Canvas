@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbit Canvas — Join a room</title>
+<style>
+:root{
+  --bg:#09090b; --fg:#fafafa; --muted:#a1a1aa; --faint:#71717a;
+  --border:rgba(255,255,255,.09); --glass:rgba(23,23,27,.55);
+  --accent:#22d3ee; --accent-dim:rgba(34,211,238,.13); --accent-border:rgba(34,211,238,.35);
+  --live:#34d399; --violet:#a78bfa; --accent-ink:#05262c;
+  --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --font-mono:ui-monospace,"JetBrains Mono","Cascadia Code",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-ui);display:grid;place-items:center;overflow:hidden}
+.dotgrid{position:fixed;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.07) 1px,transparent 1.4px);background-size:26px 26px;-webkit-mask-image:radial-gradient(ellipse at center,#000 25%,transparent 75%);mask-image:radial-gradient(ellipse at center,#000 25%,transparent 75%)}
+.glow{position:fixed;inset:0;background:radial-gradient(680px 340px at 50% -8%,var(--accent-dim),transparent 65%);pointer-events:none}
+main{position:relative;width:min(408px,calc(100vw - 40px))}
+.card{background:var(--glass);border:1px solid var(--border);border-radius:18px;padding:30px 28px 22px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.brand h1{font-size:20px;font-weight:650;letter-spacing:-.02em;margin:0}
+.tag-word{font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;color:var(--accent);border:1px solid var(--accent-border);background:var(--accent-dim);padding:3px 8px;border-radius:999px;margin-left:auto}
+.sub{margin:0 0 22px;color:var(--muted);font-size:13.5px;line-height:1.55}
+label{display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 7px}
+.field{margin-bottom:16px}
+input{width:100%;background:rgba(255,255,255,.045);border:1px solid var(--border);border-radius:10px;padding:11px 12px;color:var(--fg);font:inherit;font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s}
+input::placeholder{color:var(--faint)}
+input:focus{border-color:rgba(34,211,238,.55);box-shadow:0 0 0 3px var(--accent-dim)}
+.roomwrap{position:relative}
+.roomwrap span{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-family:var(--font-mono);color:var(--faint);font-size:14px}
+.roomwrap input{padding-left:26px;font-family:var(--font-mono);letter-spacing:.06em;text-transform:uppercase}
+.join{width:100%;margin-top:4px;padding:12px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:transform .12s,box-shadow .15s,filter .15s}
+.join:hover{filter:brightness(1.08);box-shadow:0 0 24px rgba(34,211,238,.35)}
+.join:active{transform:scale(.985)}
+.alt{display:flex;align-items:center;gap:12px;margin:16px 0 14px;color:var(--faint);font-size:11.5px;font-family:var(--font-mono)}
+.alt::before,.alt::after{content:"";flex:1;height:1px;background:var(--border)}
+.newroom{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;transition:.15s}
+.newroom:hover{color:var(--fg);border-color:rgba(255,255,255,.2)}
+.presence{display:flex;align-items:center;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+.avatars{display:flex}
+.av{width:22px;height:22px;border-radius:50%;border:2px solid #101014;display:grid;place-items:center;font-size:9.5px;font-weight:700;color:#0b0b0d;margin-left:-6px}
+.av:first-child{margin-left:0}
+.av-a{background:var(--accent)} .av-b{background:var(--live)} .av-c{background:var(--violet)}
+.presence p{margin:0;font-size:12px;color:var(--muted);line-height:1.5}
+.presence b{color:var(--fg);font-weight:600}
+.hintline{margin-top:18px;text-align:center;font-family:var(--font-mono);font-size:10.5px;color:var(--faint)}
+</style>
+</head>
+<body>
+<div class="dotgrid" data-od-id="join-grid"></div>
+<div class="glow"></div>
+<main>
+  <section class="card" data-od-id="join-card">
+    <div class="brand" data-od-id="join-brand">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
+        <ellipse cx="16" cy="16" rx="13" ry="5.5" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.2" transform="rotate(-24 16 16)"/>
+        <circle cx="16" cy="16" r="4" fill="var(--accent)"/>
+        <circle cx="26.4" cy="11.3" r="2.1" fill="#ffffff"/>
+      </svg>
+      <h1>Orbit Canvas</h1>
+      <span class="tag-word">BETA</span>
+    </div>
+    <p class="sub">A spatial whiteboard for code, math and ideas — shared live with your team.</p>
+    <form id="join" data-od-id="join-form">
+      <div class="field">
+        <label for="name">Display name</label>
+        <input id="name" autocomplete="off" placeholder="e.g. Nova" maxlength="16">
+      </div>
+      <div class="field">
+        <label for="room">Room code</label>
+        <div class="roomwrap"><span>#</span><input id="room" value="8F2A" autocomplete="off" maxlength="6" spellcheck="false"></div>
+      </div>
+      <button class="join" type="submit" data-od-id="join-submit">Join room →</button>
+    </form>
+    <div class="alt">or</div>
+    <button class="newroom" id="newroom" data-od-id="new-room">Create a fresh room</button>
+    <div class="presence" data-od-id="join-presence">
+      <div class="avatars"><span class="av av-a">A</span><span class="av av-b">D</span><span class="av av-c">R</span></div>
+      <p><b>Alex, Devin and Rin</b> are already sketching in <b>#8F2A</b>.</p>
+    </div>
+  </section>
+  <div class="hintline">No account needed — the room lives in your browser tab.</div>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const form=$('#join'), nameEl=$('#name'), roomEl=$('#room');
+function go(room,name){location.href='canvas.html?room='+encodeURIComponent(room)+'&name='+encodeURIComponent(name||'You');}
+form.addEventListener('submit',e=>{
+  e.preventDefault();
+  const room=(roomEl.value.replace(/[^a-z0-9]/gi,'')||'8F2A').toUpperCase();
+  go(room,nameEl.value.trim());
+});
+$('#newroom').addEventListener('click',()=>{
+  const code=Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
+  go(code,nameEl.value.trim());
+});
+nameEl.focus();
+</script>
+</body>
+</html>

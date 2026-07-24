@@ -1,0 +1,11 @@
+{
+  "kind": "critique-panel",
+  "score": 4,
+  "axes": {
+    "clarity": { "score": 4, "notes": "Two-screen flow: join -> canvas. Canvas chrome is one pill bar; every tool lives in the radial menu, hint line explains it once." },
+    "hierarchy": { "score": 4, "notes": "Eye lands on the Component.tsx card first; topbar reads brand -> room -> presence -> live -> share in one scan." },
+    "typography": { "score": 4, "notes": "Mono reserved for code, room code, badges and metadata; system sans for UI; single consistent 11-14px scale." },
+    "motion": { "score": 4, "notes": "Spring pop on radial buttons (staggered), eased peer-cursor drift, conic-gradient analyzing state, pop-in sticky. One flourish budget respected." },
+    "brand": { "score": 5, "notes": "Brief tokens bound verbatim: #09090b canvas, faint dot grid, glassmorphism, cyan single primary accent, emerald reserved for live/multiplayer." }
+  }
+}

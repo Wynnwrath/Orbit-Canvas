@@ -1,0 +1,83 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+
+interface TopBarProps {
+  roomCode: string;
+  onShare: () => void;
+  users?: { name: string; color: string }[];
+  isLive?: boolean;
+}
+
+export const TopBar: React.FC<TopBarProps> = ({
+  roomCode,
+  onShare,
+  users = [],
+  isLive = true
+}) => {
+  const navigate = useNavigate();
+  const avatarClasses = ['av-a', 'av-b', 'av-c'];
+
+  return (
+    <header className="topbar" data-od-id="topbar">
+      <button
+        className="home-btn"
+        type="button"
+        onClick={() => navigate('/')}
+        title="Back to Main Menu"
+        style={{
+          background: 'none',
+          border: 'none',
+          color: 'var(--ink)',
+          fontSize: '13px',
+          fontWeight: 500,
+          cursor: 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '5px',
+          padding: '4px 8px',
+          borderRadius: 'var(--radius-sm)',
+          transition: 'background 0.15s ease',
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        Home
+      </button>
+
+      <div className="vr" />
+
+      <div className="brand">
+        <span className="bd" />
+        orbit-canvas
+      </div>
+      <div className="vr" />
+      <div className="roomchip" id="roomchip" data-od-id="room-chip">
+        #{roomCode}
+      </div>
+      {users.length > 0 && (
+        <div className="avatars" data-od-id="presence-stack">
+          {users.slice(0, 3).map((u, i) => (
+            <span
+              key={i}
+              className={`av ${avatarClasses[i % avatarClasses.length]}`}
+              title={u.name}
+            >
+              {u.name.charAt(0).toUpperCase()}
+            </span>
+          ))}
+          {users.length > 3 && (
+            <span className="av av-more">+{users.length - 3}</span>
+          )}
+        </div>
+      )}
+      <div className="live" data-od-id="live-badge">
+        <i style={{ background: isLive ? 'var(--live)' : 'var(--faint)' }} />
+        {isLive ? 'LIVE' : 'OFFLINE'}
+      </div>
+      <button className="share" id="share" data-od-id="share-btn" onClick={onShare}>
+        Share Room
+      </button>
+    </header>
+  );
+};
