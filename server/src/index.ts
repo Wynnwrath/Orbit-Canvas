@@ -2,11 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import http from 'http';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { Server as SocketIOServer } from 'socket.io';
 import { connectDB } from './config/db.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
@@ -36,6 +42,16 @@ app.get('/api/health', (_req, res) => {
 app.use('/api', roomRoutes);
 app.use('/api', aiRoutes);
 
+// Static Client Fallback (Single Service Deployment on Railway / Heroku / Render)
+const clientDistPath = path.resolve(__dirname, '../../client/dist');
+if (fs.existsSync(clientDistPath)) {
+  console.log(`[Server] Serving static React SPA from ${clientDistPath}`);
+  app.use(express.static(clientDistPath));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
+
 // Error handling middleware
 app.use(errorHandler);
 
@@ -44,7 +60,7 @@ const PORT = process.env.PORT || 5000;
 async function startServer() {
   await connectDB();
   server.listen(PORT, () => {
-    console.log(`[Server] Orbit Canvas backend listening on http://localhost:${PORT}`);
+    console.log(`[Server] Orbit Canvas backend listening on port ${PORT}`);
   });
 }
 
