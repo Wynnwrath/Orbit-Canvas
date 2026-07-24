@@ -6,11 +6,15 @@ import { RoomForm } from '../components/RoomForm';
 import { NewRoomButton } from '../components/NewRoomButton';
 import { PresenceBar } from '../components/PresenceBar';
 import type { UserPresence } from '../components/PresenceBar';
+import { RecentRoomsList } from '../components/RecentRoomsList';
 import { HintLine } from '../components/HintLine';
 import { apiRequest } from '../services/api';
+import { useSavedRooms } from '../hooks/useSavedRooms';
 
 export const JoinPage: React.FC = () => {
   const navigate = useNavigate();
+  const { savedName, updateSavedName, savedRooms, addSavedRoom, removeSavedRoom } = useSavedRooms();
+
   const [presenceUsers, setPresenceUsers] = useState<UserPresence[]>([]);
   const [roomCode] = useState('8F2A');
   const [presenceLoading, setPresenceLoading] = useState(false);
@@ -51,6 +55,8 @@ export const JoinPage: React.FC = () => {
     setFormLoading(false);
 
     if (res.ok && res.data) {
+      updateSavedName(name);
+      addSavedRoom(res.data.code, false);
       navigate(`/canvas/${res.data.code}?name=${encodeURIComponent(name)}`);
     } else {
       setApiError(res.error || 'Failed to join room');
@@ -69,10 +75,19 @@ export const JoinPage: React.FC = () => {
     setFormLoading(false);
 
     if (res.ok && res.data) {
-      navigate(`/canvas/${res.data.code}?name=Nova`);
+      const activeName = savedName || 'Nova';
+      updateSavedName(activeName);
+      addSavedRoom(res.data.code, true);
+      navigate(`/canvas/${res.data.code}?name=${encodeURIComponent(activeName)}`);
     } else {
       setApiError(res.error || 'Failed to create room');
     }
+  };
+
+  const handleRejoinRecent = (code: string) => {
+    const activeName = savedName || 'Nova';
+    addSavedRoom(code, false);
+    navigate(`/canvas/${code}?name=${encodeURIComponent(activeName)}`);
   };
 
   return (
@@ -86,6 +101,7 @@ export const JoinPage: React.FC = () => {
           </p>
 
           <RoomForm
+            initialName={savedName}
             initialRoom={roomCode}
             onJoin={handleJoin}
             loading={formLoading}
@@ -95,6 +111,12 @@ export const JoinPage: React.FC = () => {
           <NewRoomButton
             onCreate={handleCreate}
             loading={formLoading}
+          />
+
+          <RecentRoomsList
+            rooms={savedRooms}
+            onRejoin={handleRejoinRecent}
+            onRemove={removeSavedRoom}
           />
 
           <PresenceBar

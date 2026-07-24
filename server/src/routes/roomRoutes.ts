@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { createRoom, joinRoom, getRoomInfo } from '../services/roomService.js';
+import { createRoom, joinRoom, getRoomInfo, getRoomsBatch } from '../services/roomService.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
 const router = Router();
@@ -24,6 +24,20 @@ router.post('/rooms/join', async (req: Request, res: Response, next: NextFunctio
     }
     const room = await joinRoom(code, name || 'You');
     res.json(room);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/rooms/batch — Get details for a list of room codes
+router.post('/rooms/batch', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { codes } = req.body || {};
+    if (!Array.isArray(codes)) {
+      throw new ApiError(400, 'Codes array is required', 'VALIDATION_ERROR');
+    }
+    const batch = await getRoomsBatch(codes);
+    res.json({ rooms: batch });
   } catch (err) {
     next(err);
   }

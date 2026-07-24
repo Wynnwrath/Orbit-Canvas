@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface RoomFormProps {
   initialName?: string;
@@ -19,6 +19,12 @@ export const RoomForm: React.FC<RoomFormProps> = ({
   const [room, setRoom] = useState(initialRoom);
   const [nameTouched, setNameTouched] = useState(false);
   const [roomTouched, setRoomTouched] = useState(false);
+
+  useEffect(() => {
+    if (initialName && !name) {
+      setName(initialName);
+    }
+  }, [initialName]);
 
   const cleanRoomCode = (val: string) => val.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6);
 

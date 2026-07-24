@@ -9,11 +9,7 @@ inMemoryRooms.set('8F2A', {
   code: '8F2A',
   createdAt: new Date(),
   lastActive: new Date(),
-  users: [
-    { name: 'Alex', color: 'accent', joinedAt: new Date() },
-    { name: 'Devin', color: 'live', joinedAt: new Date() },
-    { name: 'Rin', color: 'violet', joinedAt: new Date() }
-  ]
+  users: []
 });
 
 const UNAMBIGUOUS_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -136,4 +132,18 @@ export async function getRoomInfo(code: string): Promise<{ code: string; users: 
   }
 
   throw new ApiError(404, `Room #${formattedCode} not found`, 'ROOM_NOT_FOUND');
+}
+
+export async function getRoomsBatch(codes: string[]): Promise<{ code: string; exists: boolean; activeCount: number }[]> {
+  const results = [];
+  for (const c of codes) {
+    const formatted = c.toUpperCase().trim();
+    try {
+      const room = await getRoomInfo(formatted);
+      results.push({ code: formatted, exists: true, activeCount: room.activeCount });
+    } catch (_err) {
+      results.push({ code: formatted, exists: false, activeCount: 0 });
+    }
+  }
+  return results;
 }
