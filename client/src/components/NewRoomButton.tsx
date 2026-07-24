@@ -1,12 +1,10 @@
 import React from 'react';
 
 interface NewRoomButtonProps {
-  onCreate: (code: string) => Promise<void>;
+  onCreate: () => void | Promise<void>;
   disabled?: boolean;
   loading?: boolean;
 }
-
-const UNAMBIGUOUS_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 export const NewRoomButton: React.FC<NewRoomButtonProps> = ({
   onCreate,
@@ -15,14 +13,7 @@ export const NewRoomButton: React.FC<NewRoomButtonProps> = ({
 }) => {
   const handleClick = async () => {
     if (disabled || loading) return;
-
-    let code = '';
-    for (let i = 0; i < 4; i++) {
-      const idx = Math.floor(Math.random() * UNAMBIGUOUS_CHARS.length);
-      code += UNAMBIGUOUS_CHARS[idx];
-    }
-
-    await onCreate(code);
+    await onCreate();
   };
 
   return (

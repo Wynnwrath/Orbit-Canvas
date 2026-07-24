@@ -2,11 +2,12 @@ import { Room, IRoom, IRoomUser } from '../models/Room.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
 // In-memory cache/store for zero-dependency local runs
-const inMemoryRooms: Map<string, { code: string; createdAt: Date; lastActive: Date; users: IRoomUser[] }> = new Map();
+const inMemoryRooms: Map<string, { code: string; title: string; createdAt: Date; lastActive: Date; users: IRoomUser[] }> = new Map();
 
 // Seed initial default room #8F2A
 inMemoryRooms.set('8F2A', {
   code: '8F2A',
+  title: 'Demo Whiteboard',
   createdAt: new Date(),
   lastActive: new Date(),
   users: []
@@ -23,8 +24,9 @@ export function generateRoomCode(): string {
   return code;
 }
 
-export async function createRoom(customCode?: string): Promise<{ code: string; users: IRoomUser[] }> {
+export async function createRoom(customCode?: string, title?: string): Promise<{ code: string; title: string; users: IRoomUser[] }> {
   let code = (customCode || generateRoomCode()).toUpperCase();
+  const roomTitle = (title || 'Untitled Workspace').trim();
 
   try {
     let existing = await Room.findOne({ code });
@@ -33,24 +35,25 @@ export async function createRoom(customCode?: string): Promise<{ code: string; u
         code = generateRoomCode();
       }
     }
-    const newRoom = await Room.create({ code, users: [] });
-    return { code: newRoom.code, users: newRoom.users };
+    const newRoom = await Room.create({ code, title: roomTitle, users: [] });
+    return { code: newRoom.code, title: newRoom.title, users: newRoom.users };
   } catch (_dbErr) {
     // Fallback in-memory
     if (!inMemoryRooms.has(code)) {
       inMemoryRooms.set(code, {
         code,
+        title: roomTitle,
         createdAt: new Date(),
         lastActive: new Date(),
         users: []
       });
     }
     const room = inMemoryRooms.get(code)!;
-    return { code: room.code, users: room.users };
+    return { code: room.code, title: room.title, users: room.users };
   }
 }
 
-export async function joinRoom(code: string, userName: string): Promise<{ code: string; users: IRoomUser[] }> {
+export async function joinRoom(code: string, userName: string): Promise<{ code: string; title: string; users: IRoomUser[] }> {
   const formattedCode = code.toUpperCase().trim();
   if (formattedCode.length < 4 || formattedCode.length > 6) {
     throw new ApiError(400, 'Room code must be 4-6 characters', 'VALIDATION_ERROR');
@@ -62,7 +65,7 @@ export async function joinRoom(code: string, userName: string): Promise<{ code: 
     let room = await Room.findOne({ code: formattedCode });
     if (!room) {
       // Auto-create room if it doesn't exist to allow instant joining
-      room = await Room.create({ code: formattedCode, users: [] });
+      room = await Room.create({ code: formattedCode, title: `Workspace #${formattedCode}`, users: [] });
     }
 
     if (room.users.length >= 12) {
@@ -84,7 +87,7 @@ export async function joinRoom(code: string, userName: string): Promise<{ code: 
       await room.save();
     }
 
-    return { code: room.code, users: room.users };
+    return { code: room.code, title: room.title || `Workspace #${room.code}`, users: room.users };
   } catch (err) {
     if (err instanceof ApiError) throw err;
 
@@ -92,6 +95,7 @@ export async function joinRoom(code: string, userName: string): Promise<{ code: 
     if (!inMemoryRooms.has(formattedCode)) {
       inMemoryRooms.set(formattedCode, {
         code: formattedCode,
+        title: `Workspace #${formattedCode}`,
         createdAt: new Date(),
         lastActive: new Date(),
         users: []
@@ -110,17 +114,17 @@ export async function joinRoom(code: string, userName: string): Promise<{ code: 
       memRoom.users.push({ name, color: assignedColor, joinedAt: new Date() });
     }
 
-    return { code: memRoom.code, users: memRoom.users };
+    return { code: memRoom.code, title: memRoom.title, users: memRoom.users };
   }
 }
 
-export async function getRoomInfo(code: string): Promise<{ code: string; users: IRoomUser[]; activeCount: number }> {
+export async function getRoomInfo(code: string): Promise<{ code: string; title: string; users: IRoomUser[]; activeCount: number }> {
   const formattedCode = code.toUpperCase().trim();
 
   try {
     const room = await Room.findOne({ code: formattedCode });
     if (room) {
-      return { code: room.code, users: room.users, activeCount: room.users.length };
+      return { code: room.code, title: room.title || `Workspace #${room.code}`, users: room.users, activeCount: room.users.length };
     }
   } catch (_err) {
     // ignore
@@ -128,21 +132,21 @@ export async function getRoomInfo(code: string): Promise<{ code: string; users: 
 
   if (inMemoryRooms.has(formattedCode)) {
     const mem = inMemoryRooms.get(formattedCode)!;
-    return { code: mem.code, users: mem.users, activeCount: mem.users.length };
+    return { code: mem.code, title: mem.title, users: mem.users, activeCount: mem.users.length };
   }
 
   throw new ApiError(404, `Room #${formattedCode} not found`, 'ROOM_NOT_FOUND');
 }
 
-export async function getRoomsBatch(codes: string[]): Promise<{ code: string; exists: boolean; activeCount: number }[]> {
+export async function getRoomsBatch(codes: string[]): Promise<{ code: string; title: string; exists: boolean; activeCount: number }[]> {
   const results = [];
   for (const c of codes) {
     const formatted = c.toUpperCase().trim();
     try {
       const room = await getRoomInfo(formatted);
-      results.push({ code: formatted, exists: true, activeCount: room.activeCount });
+      results.push({ code: formatted, title: room.title, exists: true, activeCount: room.activeCount });
     } catch (_err) {
-      results.push({ code: formatted, exists: false, activeCount: 0 });
+      results.push({ code: formatted, title: `Workspace #${formatted}`, exists: false, activeCount: 0 });
     }
   }
   return results;

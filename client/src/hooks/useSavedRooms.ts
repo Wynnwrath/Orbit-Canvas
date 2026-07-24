@@ -5,7 +5,7 @@ const ROOMS_KEY = 'orbit_canvas_saved_rooms';
 
 export interface SavedRoom {
   code: string;
-  name?: string;
+  title: string;
   joinedAt: number;
   isOwner?: boolean;
   activeCount?: number;
@@ -39,19 +39,22 @@ export function useSavedRooms() {
     }
   };
 
-  // Persist rooms
-  const addSavedRoom = (code: string, isOwner: boolean = false) => {
+  // Persist rooms with title
+  const addSavedRoom = (code: string, title?: string, isOwner: boolean = false) => {
     const uppercaseCode = code.toUpperCase().trim();
+    const roomTitle = (title || `Workspace #${uppercaseCode}`).trim();
+
     setSavedRooms(prev => {
       const filtered = prev.filter(r => r.code !== uppercaseCode);
       const updated: SavedRoom[] = [
         {
           code: uppercaseCode,
+          title: roomTitle,
           joinedAt: Date.now(),
           isOwner,
         },
         ...filtered,
-      ].slice(0, 10); // Keep top 10 most recent
+      ].slice(0, 20); // Keep top 20 most recent saved rooms
 
       try {
         localStorage.setItem(ROOMS_KEY, JSON.stringify(updated));

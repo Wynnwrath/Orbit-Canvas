@@ -9,6 +9,7 @@ export interface IRoomUser {
 
 export interface IRoom extends Document {
   code: string;
+  title: string;
   createdAt: Date;
   lastActive: Date;
   users: IRoomUser[];
@@ -23,6 +24,7 @@ const RoomUserSchema = new Schema<IRoomUser>({
 
 const RoomSchema = new Schema<IRoom>({
   code: { type: String, required: true, unique: true, uppercase: true, trim: true },
+  title: { type: String, required: true, default: 'Untitled Workspace', trim: true },
   createdAt: { type: Date, default: Date.now },
   lastActive: { type: Date, default: Date.now },
   users: [RoomUserSchema]

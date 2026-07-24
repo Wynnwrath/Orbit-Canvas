@@ -4,11 +4,14 @@ import { ApiError } from '../middleware/errorHandler.js';
 
 const router = Router();
 
-// POST /api/rooms — Create a fresh room
+// POST /api/rooms — Create a fresh room with mandatory title
 router.post('/rooms', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { code } = req.body || {};
-    const room = await createRoom(code);
+    const { code, title } = req.body || {};
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      throw new ApiError(400, 'Room title is required', 'VALIDATION_ERROR');
+    }
+    const room = await createRoom(code, title);
     res.status(201).json(room);
   } catch (err) {
     next(err);

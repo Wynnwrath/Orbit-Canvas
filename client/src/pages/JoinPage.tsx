@@ -7,6 +7,7 @@ import { NewRoomButton } from '../components/NewRoomButton';
 import { PresenceBar } from '../components/PresenceBar';
 import type { UserPresence } from '../components/PresenceBar';
 import { RecentRoomsList } from '../components/RecentRoomsList';
+import { CreateRoomModal } from '../components/CreateRoomModal';
 import { HintLine } from '../components/HintLine';
 import { apiRequest } from '../services/api';
 import { useSavedRooms } from '../hooks/useSavedRooms';
@@ -20,6 +21,8 @@ export const JoinPage: React.FC = () => {
   const [presenceLoading, setPresenceLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Fetch room presence info
   useEffect(() => {
@@ -47,7 +50,7 @@ export const JoinPage: React.FC = () => {
     setFormLoading(true);
     setApiError(null);
 
-    const res = await apiRequest<{ code: string }>('/api/rooms/join', {
+    const res = await apiRequest<{ code: string; title?: string }>('/api/rooms/join', {
       method: 'POST',
       body: JSON.stringify({ code: targetCode, name })
     });
@@ -56,29 +59,29 @@ export const JoinPage: React.FC = () => {
 
     if (res.ok && res.data) {
       updateSavedName(name);
-      addSavedRoom(res.data.code, false);
+      addSavedRoom(res.data.code, res.data.title || `Workspace #${res.data.code}`, false);
       navigate(`/canvas/${res.data.code}?name=${encodeURIComponent(name)}`);
     } else {
       setApiError(res.error || 'Failed to join room');
     }
   };
 
-  const handleCreate = async (newCode: string) => {
+  const handleCreateFromModal = async (title: string, name: string, customCode?: string) => {
     setFormLoading(true);
     setApiError(null);
 
-    const res = await apiRequest<{ code: string }>('/api/rooms', {
+    const res = await apiRequest<{ code: string; title: string }>('/api/rooms', {
       method: 'POST',
-      body: JSON.stringify({ code: newCode })
+      body: JSON.stringify({ code: customCode, title })
     });
 
     setFormLoading(false);
 
     if (res.ok && res.data) {
-      const activeName = savedName || 'Nova';
-      updateSavedName(activeName);
-      addSavedRoom(res.data.code, true);
-      navigate(`/canvas/${res.data.code}?name=${encodeURIComponent(activeName)}`);
+      updateSavedName(name);
+      addSavedRoom(res.data.code, res.data.title || title, true);
+      setIsModalOpen(false);
+      navigate(`/canvas/${res.data.code}?name=${encodeURIComponent(name)}`);
     } else {
       setApiError(res.error || 'Failed to create room');
     }
@@ -86,7 +89,8 @@ export const JoinPage: React.FC = () => {
 
   const handleRejoinRecent = (code: string) => {
     const activeName = savedName || 'Nova';
-    addSavedRoom(code, false);
+    const roomItem = savedRooms.find(r => r.code === code);
+    addSavedRoom(code, roomItem?.title, false);
     navigate(`/canvas/${code}?name=${encodeURIComponent(activeName)}`);
   };
 
@@ -109,12 +113,35 @@ export const JoinPage: React.FC = () => {
           />
 
           <NewRoomButton
-            onCreate={handleCreate}
+            onCreate={() => setIsModalOpen(true)}
             loading={formLoading}
           />
 
+          {savedRooms.length > 0 && (
+            <div style={{ marginTop: '16px', textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => navigate('/dashboard')}
+                style={{
+                  background: 'rgba(56, 189, 248, 0.08)',
+                  border: '1px solid rgba(56, 189, 248, 0.25)',
+                  color: 'var(--accent, #38bdf8)',
+                  borderRadius: '10px',
+                  padding: '8px 16px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  width: '100%',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                View Canvases Dashboard ({savedRooms.length}) →
+              </button>
+            </div>
+          )}
+
           <RecentRoomsList
-            rooms={savedRooms}
+            rooms={savedRooms.slice(0, 3)}
             onRejoin={handleRejoinRecent}
             onRemove={removeSavedRoom}
           />
@@ -125,6 +152,14 @@ export const JoinPage: React.FC = () => {
             loading={presenceLoading}
           />
         </section>
+
+        <CreateRoomModal
+          isOpen={isModalOpen}
+          defaultName={savedName}
+          onClose={() => setIsModalOpen(false)}
+          onCreate={handleCreateFromModal}
+          loading={formLoading}
+        />
 
         <HintLine />
       </main>
