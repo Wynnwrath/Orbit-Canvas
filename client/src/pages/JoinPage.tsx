@@ -11,11 +11,7 @@ import { apiRequest } from '../services/api';
 
 export const JoinPage: React.FC = () => {
   const navigate = useNavigate();
-  const [presenceUsers, setPresenceUsers] = useState<UserPresence[]>([
-    { name: 'Alex', color: 'accent' },
-    { name: 'Devin', color: 'live' },
-    { name: 'Rin', color: 'violet' }
-  ]);
+  const [presenceUsers, setPresenceUsers] = useState<UserPresence[]>([]);
   const [roomCode] = useState('8F2A');
   const [presenceLoading, setPresenceLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
@@ -31,16 +27,7 @@ export const JoinPage: React.FC = () => {
         if (res.ok && res.data?.users) {
           setPresenceUsers(res.data.users);
         } else {
-          // If room doesn't exist yet, show default demo presence for 8F2A or empty
-          if (roomCode === '8F2A') {
-            setPresenceUsers([
-              { name: 'Alex', color: 'accent' },
-              { name: 'Devin', color: 'live' },
-              { name: 'Rin', color: 'violet' }
-            ]);
-          } else {
-            setPresenceUsers([]);
-          }
+          setPresenceUsers([]);
         }
         setPresenceLoading(false);
       }

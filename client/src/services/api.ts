@@ -1,4 +1,6 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// In production (behind nginx proxy), API calls go to same origin.
+// In dev, fall back to localhost:5000.
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export interface ApiResult<T> {
   ok: boolean;

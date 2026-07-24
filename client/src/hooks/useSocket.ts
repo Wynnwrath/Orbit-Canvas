@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:5000';
+// In production behind nginx, Socket.IO connects to same origin (nginx proxies /socket.io/).
+// In dev, fall back to localhost:5000.
+const WS_URL = import.meta.env.VITE_WS_URL || '';
 
 export type SocketStatus = 'connecting' | 'connected' | 'disconnected';
 
@@ -10,7 +12,8 @@ export function useSocket(roomCode: string, userName: string) {
   const [status, setStatus] = useState<SocketStatus>('connecting');
 
   useEffect(() => {
-    const socket = io(WS_URL, {
+    const socket = io(WS_URL || window.location.origin, {
+      path: '/socket.io/',
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
