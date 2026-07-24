@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 interface TopBarProps {
   roomCode: string;
   onShare: () => void;
+  onSave?: () => void;
+  onExport?: () => void;
   users?: { name: string; color: string }[];
   isLive?: boolean;
 }
@@ -11,6 +13,8 @@ interface TopBarProps {
 export const TopBar: React.FC<TopBarProps> = ({
   roomCode,
   onShare,
+  onSave,
+  onExport,
   users = [],
   isLive = true
 }) => {
@@ -98,6 +102,19 @@ export const TopBar: React.FC<TopBarProps> = ({
         <i style={{ background: isLive ? 'var(--live)' : 'var(--faint)' }} />
         {isLive ? 'LIVE' : 'OFFLINE'}
       </div>
+
+      {onSave && (
+        <button className="share" type="button" onClick={onSave} title="Save canvas state to cloud">
+          Save
+        </button>
+      )}
+
+      {onExport && (
+        <button className="share" type="button" onClick={onExport} title="Export image screenshot of canvas">
+          Export
+        </button>
+      )}
+
       <button className="share" id="share" data-od-id="share-btn" onClick={onShare}>
         Share Room
       </button>

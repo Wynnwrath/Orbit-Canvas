@@ -155,7 +155,45 @@ export const CanvasPage: React.FC = () => {
     }
   }, [roomCode]);
 
-  // Trigger spatial vector snapshot & canvas image preview save
+  // Manual save handler
+  const handleManualSave = async () => {
+    showToast('Saving canvas to cloud...');
+    await syncSpatialSnapshot();
+    await saveCanvasPreview();
+    showToast('Canvas saved to cloud');
+  };
+
+  // Manual PNG Export handler
+  const handleExportPNG = async () => {
+    if (!viewportRef.current) return;
+    showToast('Exporting PNG image...');
+    try {
+      const canvas = await html2canvas(viewportRef.current, {
+        backgroundColor: '#09090b',
+        useCORS: true,
+        logging: false,
+        scale: 1.5,
+        ignoreElements: (element) => {
+          return (
+            element.classList.contains('ai-lasso-rect') ||
+            element.classList.contains('peer-cursor') ||
+            element.id === 'radial'
+          );
+        },
+      });
+      if (canvas) {
+        const link = document.createElement('a');
+        link.download = `Orbit-Canvas-${roomCode}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('Canvas exported to PNG');
+      }
+    } catch (_err) {
+      showToast('Failed to export canvas image');
+    }
+  };
+
+  // Trigger background spatial vector snapshot & canvas image preview save
   useEffect(() => {
     const timer = setTimeout(() => {
       syncSpatialSnapshot();
@@ -509,6 +547,8 @@ export const CanvasPage: React.FC = () => {
       <TopBar
         roomCode={roomCode}
         onShare={handleShare}
+        onSave={handleManualSave}
+        onExport={handleExportPNG}
         users={presenceUsers}
         isLive={socketStatus === 'connected'}
       />

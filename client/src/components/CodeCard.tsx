@@ -146,15 +146,22 @@ export const CodeCard: React.FC<CodeCardProps> = ({ card, onGrab, onMove, onCode
           <button
             className="copybtn"
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={toggleEditing}
             style={{
               borderColor: isEditing ? 'var(--accent-border)' : 'var(--border)',
               color: isEditing ? 'var(--accent)' : 'var(--muted)',
             }}
           >
-            {isEditing ? '✓ Done' : '✏️ Edit'}
+            {isEditing ? 'Done' : 'Edit'}
           </button>
-          <button className="copybtn" data-copy type="button" onClick={handleCopy}>
+          <button
+            className="copybtn"
+            data-copy
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handleCopy}
+          >
             {copied ? 'Copied' : 'Copy'}
           </button>
         </div>
@@ -194,7 +201,7 @@ export const CodeCard: React.FC<CodeCardProps> = ({ card, onGrab, onMove, onCode
         ) : (
           <pre
             onDoubleClick={toggleEditing}
-            title="Double-click or click ✏️ Edit in header to rewrite code"
+            title="Double-click or click Edit in header to rewrite code"
             dangerouslySetInnerHTML={{ __html: highlightedHtml }}
             style={{
               margin: 0,
