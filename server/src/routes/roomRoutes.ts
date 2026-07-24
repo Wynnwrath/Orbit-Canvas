@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { createRoom, joinRoom, getRoomInfo, getRoomsBatch } from '../services/roomService.js';
+import { createRoom, joinRoom, getRoomInfo, getRoomsBatch, updateRoomPreview } from '../services/roomService.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
 const router = Router();
@@ -41,6 +41,22 @@ router.post('/rooms/batch', async (req: Request, res: Response, next: NextFuncti
     }
     const batch = await getRoomsBatch(codes);
     res.json({ rooms: batch });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/rooms/:code/preview — Save real thumbnail snapshot preview URL
+router.post('/rooms/:code/preview', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const codeParam = req.params.code;
+    const roomCode = Array.isArray(codeParam) ? codeParam[0] : codeParam;
+    const { previewUrl } = req.body || {};
+    if (!previewUrl) {
+      throw new ApiError(400, 'previewUrl is required', 'VALIDATION_ERROR');
+    }
+    const updated = await updateRoomPreview(roomCode, previewUrl);
+    res.json({ success: updated });
   } catch (err) {
     next(err);
   }

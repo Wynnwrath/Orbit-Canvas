@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
+import html2canvas from 'html2canvas';
 import { CanvasBg } from '../components/CanvasBg';
 import { TopBar } from '../components/TopBar';
 import { CodeCard } from '../components/CodeCard';
@@ -88,6 +89,43 @@ export const CanvasPage: React.FC = () => {
       delete document.body.dataset.mode;
     };
   }, [mode]);
+
+  // Canvas Snapshot helper to upload real room thumbnail
+  const saveCanvasPreview = useCallback(async () => {
+    if (!viewportRef.current) return;
+    try {
+      const canvas = await html2canvas(viewportRef.current, {
+        backgroundColor: '#070913',
+        useCORS: true,
+        logging: false,
+        scale: 0.5,
+        ignoreElements: (element) => {
+          return (
+            element.classList.contains('ai-lasso-rect') ||
+            element.classList.contains('peer-cursor') ||
+            element.id === 'radial'
+          );
+        },
+      });
+      if (canvas) {
+        const previewUrl = canvas.toDataURL('image/jpeg', 0.6);
+        await apiRequest(`/api/rooms/${roomCode}/preview`, {
+          method: 'POST',
+          body: JSON.stringify({ previewUrl }),
+        });
+      }
+    } catch (_err) {
+      // ignore preview errors
+    }
+  }, [roomCode]);
+
+  // Trigger canvas preview auto-save after user interaction
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveCanvasPreview();
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [cards, strokes, stickies, saveCanvasPreview]);
 
   // Zoom handlers
   const handleZoomIn = () => setZoom(z => Math.min(2.5, +(z + 0.15).toFixed(2)));

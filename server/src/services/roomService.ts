@@ -2,7 +2,7 @@ import { Room, IRoom, IRoomUser } from '../models/Room.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
 // In-memory cache/store for zero-dependency local runs
-const inMemoryRooms: Map<string, { code: string; title: string; createdAt: Date; lastActive: Date; users: IRoomUser[] }> = new Map();
+const inMemoryRooms: Map<string, { code: string; title: string; previewUrl?: string; createdAt: Date; lastActive: Date; users: IRoomUser[] }> = new Map();
 
 // Seed initial default room #8F2A
 inMemoryRooms.set('8F2A', {
@@ -118,13 +118,15 @@ export async function joinRoom(code: string, userName: string): Promise<{ code: 
   }
 }
 
-export async function getRoomInfo(code: string): Promise<{ code: string; title: string; users: IRoomUser[]; activeCount: number }> {
+export async function updateRoomPreview(code: string, previewUrl: string): Promise<boolean> {
   const formattedCode = code.toUpperCase().trim();
-
   try {
     const room = await Room.findOne({ code: formattedCode });
     if (room) {
-      return { code: room.code, title: room.title || `Workspace #${room.code}`, users: room.users, activeCount: room.users.length };
+      room.previewUrl = previewUrl;
+      room.lastActive = new Date();
+      await room.save();
+      return true;
     }
   } catch (_err) {
     // ignore
@@ -132,19 +134,40 @@ export async function getRoomInfo(code: string): Promise<{ code: string; title: 
 
   if (inMemoryRooms.has(formattedCode)) {
     const mem = inMemoryRooms.get(formattedCode)!;
-    return { code: mem.code, title: mem.title, users: mem.users, activeCount: mem.users.length };
+    mem.previewUrl = previewUrl;
+    mem.lastActive = new Date();
+    return true;
+  }
+  return false;
+}
+
+export async function getRoomInfo(code: string): Promise<{ code: string; title: string; previewUrl?: string; users: IRoomUser[]; activeCount: number }> {
+  const formattedCode = code.toUpperCase().trim();
+
+  try {
+    const room = await Room.findOne({ code: formattedCode });
+    if (room) {
+      return { code: room.code, title: room.title || `Workspace #${room.code}`, previewUrl: room.previewUrl, users: room.users, activeCount: room.users.length };
+    }
+  } catch (_err) {
+    // ignore
+  }
+
+  if (inMemoryRooms.has(formattedCode)) {
+    const mem = inMemoryRooms.get(formattedCode)!;
+    return { code: mem.code, title: mem.title, previewUrl: mem.previewUrl, users: mem.users, activeCount: mem.users.length };
   }
 
   throw new ApiError(404, `Room #${formattedCode} not found`, 'ROOM_NOT_FOUND');
 }
 
-export async function getRoomsBatch(codes: string[]): Promise<{ code: string; title: string; exists: boolean; activeCount: number }[]> {
+export async function getRoomsBatch(codes: string[]): Promise<{ code: string; title: string; previewUrl?: string; exists: boolean; activeCount: number }[]> {
   const results = [];
   for (const c of codes) {
     const formatted = c.toUpperCase().trim();
     try {
       const room = await getRoomInfo(formatted);
-      results.push({ code: formatted, title: room.title, exists: true, activeCount: room.activeCount });
+      results.push({ code: formatted, title: room.title, previewUrl: room.previewUrl, exists: true, activeCount: room.activeCount });
     } catch (_err) {
       results.push({ code: formatted, title: `Workspace #${formatted}`, exists: false, activeCount: 0 });
     }

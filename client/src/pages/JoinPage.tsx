@@ -6,7 +6,6 @@ import { RoomForm } from '../components/RoomForm';
 import { NewRoomButton } from '../components/NewRoomButton';
 import { PresenceBar } from '../components/PresenceBar';
 import type { UserPresence } from '../components/PresenceBar';
-import { RecentRoomsList } from '../components/RecentRoomsList';
 import { CreateRoomModal } from '../components/CreateRoomModal';
 import { HintLine } from '../components/HintLine';
 import { apiRequest } from '../services/api';
@@ -14,7 +13,7 @@ import { useSavedRooms } from '../hooks/useSavedRooms';
 
 export const JoinPage: React.FC = () => {
   const navigate = useNavigate();
-  const { savedName, updateSavedName, savedRooms, addSavedRoom, removeSavedRoom } = useSavedRooms();
+  const { savedName, updateSavedName, savedRooms, addSavedRoom } = useSavedRooms();
 
   const [presenceUsers, setPresenceUsers] = useState<UserPresence[]>([]);
   const [roomCode] = useState('8F2A');
@@ -87,13 +86,6 @@ export const JoinPage: React.FC = () => {
     }
   };
 
-  const handleRejoinRecent = (code: string) => {
-    const activeName = savedName || 'Nova';
-    const roomItem = savedRooms.find(r => r.code === code);
-    addSavedRoom(code, roomItem?.title, false);
-    navigate(`/canvas/${code}?name=${encodeURIComponent(activeName)}`);
-  };
-
   return (
     <>
       <DotGridBg masked />
@@ -127,7 +119,7 @@ export const JoinPage: React.FC = () => {
                   border: '1px solid rgba(56, 189, 248, 0.25)',
                   color: 'var(--accent, #38bdf8)',
                   borderRadius: '10px',
-                  padding: '8px 16px',
+                  padding: '10px 16px',
                   fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -139,12 +131,6 @@ export const JoinPage: React.FC = () => {
               </button>
             </div>
           )}
-
-          <RecentRoomsList
-            rooms={savedRooms.slice(0, 3)}
-            onRejoin={handleRejoinRecent}
-            onRemove={removeSavedRoom}
-          />
 
           <PresenceBar
             roomCode={roomCode}

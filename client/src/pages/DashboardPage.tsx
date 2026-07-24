@@ -26,21 +26,21 @@ export const DashboardPage: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [liveBatch, setLiveBatch] = useState<Record<string, { title?: string; activeCount?: number }>>({});
+  const [liveBatch, setLiveBatch] = useState<Record<string, { title?: string; previewUrl?: string; activeCount?: number }>>({});
 
   // Sync live metadata for saved rooms from server
   useEffect(() => {
     if (savedRooms.length === 0) return;
     const fetchBatch = async () => {
       const codes = savedRooms.map(r => r.code);
-      const res = await apiRequest<{ rooms: { code: string; title: string; activeCount: number }[] }>('/api/rooms/batch', {
+      const res = await apiRequest<{ rooms: { code: string; title: string; previewUrl?: string; activeCount: number }[] }>('/api/rooms/batch', {
         method: 'POST',
         body: JSON.stringify({ codes })
       });
       if (res.ok && res.data?.rooms) {
-        const map: Record<string, { title?: string; activeCount?: number }> = {};
+        const map: Record<string, { title?: string; previewUrl?: string; activeCount?: number }> = {};
         res.data.rooms.forEach(r => {
-          map[r.code] = { title: r.title, activeCount: r.activeCount };
+          map[r.code] = { title: r.title, previewUrl: r.previewUrl, activeCount: r.activeCount };
         });
         setLiveBatch(map);
       }
@@ -84,68 +84,83 @@ export const DashboardPage: React.FC = () => {
     <div style={{ minHeight: '100vh', background: '#070913', color: '#f8fafc', position: 'relative', overflowX: 'hidden' }}>
       <DotGridBg masked />
 
-      {/* Top Dashboard Header */}
-      <header
+      {/* Floating Header Controls */}
+      <nav
         style={{
-          borderBottom: '1px solid var(--surface-border, rgba(255,255,255,0.08))',
-          background: 'rgba(13, 17, 34, 0.75)',
-          backdropFilter: 'blur(16px)',
-          padding: '16px 32px',
+          position: 'fixed',
+          top: '20px',
+          left: '24px',
+          right: '24px',
+          zIndex: 100,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
+          pointerEvents: 'none',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'auto' }}>
           <button
             type="button"
             onClick={() => navigate('/')}
             style={{
-              background: 'transparent',
+              background: 'rgba(13, 17, 34, 0.75)',
+              backdropFilter: 'blur(16px)',
               border: '1px solid var(--surface-border, rgba(255,255,255,0.12))',
               color: 'var(--text-sub, #94a3b8)',
-              padding: '6px 14px',
-              borderRadius: '8px',
+              padding: '10px 18px',
+              borderRadius: '14px',
               cursor: 'pointer',
               fontSize: '13px',
               fontWeight: 600,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              transition: 'all 0.15s ease',
             }}
           >
             ← Home
           </button>
-          <BrandHeader />
+          <div
+            style={{
+              background: 'rgba(13, 17, 34, 0.75)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid var(--surface-border, rgba(255,255,255,0.12))',
+              borderRadius: '14px',
+              padding: '8px 16px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+            }}
+          >
+            <BrandHeader />
+          </div>
         </div>
 
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
           style={{
+            pointerEvents: 'auto',
             background: 'linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)',
             color: '#070913',
             border: 'none',
-            padding: '10px 20px',
-            borderRadius: '10px',
+            padding: '12px 22px',
+            borderRadius: '14px',
             fontWeight: 700,
             fontSize: '14px',
             cursor: 'pointer',
-            boxShadow: '0 4px 16px rgba(56, 189, 248, 0.3)',
+            boxShadow: '0 8px 24px rgba(56, 189, 248, 0.3)',
+            transition: 'transform 0.15s ease',
           }}
         >
           + New Canvas
         </button>
-      </header>
+      </nav>
 
       {/* Main Content Area */}
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 24px' }}>
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 24px 40px 24px' }}>
         <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
             My Spatial Canvases
           </h1>
           <p style={{ color: 'var(--text-sub, #94a3b8)', margin: 0, fontSize: '15px' }}>
-            Preview, manage and rejoin your collaborative code & idea whiteboards.
+            Live visual previews of your collaborative code & idea whiteboards.
           </p>
         </div>
 
@@ -193,6 +208,7 @@ export const DashboardPage: React.FC = () => {
             {savedRooms.map(room => {
               const liveData = liveBatch[room.code];
               const displayTitle = liveData?.title || room.title || `Workspace #${room.code}`;
+              const previewImage = liveData?.previewUrl;
               const activeCount = liveData?.activeCount || 0;
 
               return (
@@ -206,15 +222,15 @@ export const DashboardPage: React.FC = () => {
                     overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
-                    transition: 'transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
+                    transition: 'all 0.2s ease',
                     boxShadow: '0 12px 32px rgba(0, 0, 0, 0.4)',
                   }}
                 >
-                  {/* Spatial Canvas Preview Box */}
+                  {/* Real Spatial Canvas Preview Box */}
                   <div
                     style={{
-                      height: '140px',
-                      background: 'radial-gradient(circle at 50% 30%, rgba(56, 189, 248, 0.15), transparent 70%), #070913',
+                      height: '160px',
+                      background: '#070913',
                       position: 'relative',
                       borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
                       overflow: 'hidden',
@@ -223,40 +239,34 @@ export const DashboardPage: React.FC = () => {
                       justifyContent: 'center',
                     }}
                   >
-                    {/* Visual Dot Grid background simulation */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px)',
-                        backgroundSize: '16px 16px',
-                        opacity: 0.6,
-                      }}
-                    />
-
-                    {/* Simulated Mini Code Card Graphic */}
-                    <div
-                      style={{
-                        width: '160px',
-                        height: '80px',
-                        background: 'rgba(15, 23, 42, 0.85)',
-                        border: '1px solid rgba(56, 189, 248, 0.4)',
-                        borderRadius: '10px',
-                        padding: '8px',
-                        boxShadow: '0 8px 20px rgba(0,0,0,0.6)',
-                        zIndex: 2,
-                        transform: 'rotate(-2deg)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
-                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ff5f56' }} />
-                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ffbd2e' }} />
-                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#27c93f' }} />
+                    {previewImage ? (
+                      /* Actual Canvas Thumbnail Snapshot */
+                      <img
+                        src={previewImage}
+                        alt={displayTitle}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          filter: 'brightness(0.9)',
+                        }}
+                      />
+                    ) : (
+                      /* Placeholder dot grid when no preview captured yet */
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px)',
+                          backgroundSize: '16px 16px',
+                          display: 'grid',
+                          placeItems: 'center',
+                          opacity: 0.6,
+                        }}
+                      >
+                        <span style={{ fontSize: '24px', opacity: 0.4 }}>✨</span>
                       </div>
-                      <div style={{ height: '4px', width: '70%', background: 'rgba(56, 189, 248, 0.6)', borderRadius: '2px', marginBottom: '4px' }} />
-                      <div style={{ height: '4px', width: '50%', background: 'rgba(255, 255, 255, 0.3)', borderRadius: '2px', marginBottom: '4px' }} />
-                      <div style={{ height: '4px', width: '85%', background: 'rgba(168, 85, 247, 0.5)', borderRadius: '2px' }} />
-                    </div>
+                    )}
 
                     {/* Room Code Badge */}
                     <span
@@ -264,13 +274,14 @@ export const DashboardPage: React.FC = () => {
                         position: 'absolute',
                         top: '12px',
                         right: '12px',
-                        background: 'rgba(56, 189, 248, 0.15)',
-                        border: '1px solid rgba(56, 189, 248, 0.3)',
+                        background: 'rgba(7, 9, 19, 0.85)',
+                        backdropFilter: 'blur(8px)',
+                        border: '1px solid rgba(56, 189, 248, 0.4)',
                         color: '#38bdf8',
                         fontSize: '12px',
                         fontWeight: 700,
-                        padding: '3px 8px',
-                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        borderRadius: '8px',
                         fontFamily: 'monospace',
                         zIndex: 3,
                       }}
