@@ -59,20 +59,16 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       }}
     >
       <div
-        className="card"
+        className="glass-card"
         style={{
           width: '100%',
           maxWidth: '440px',
-          background: 'var(--surface-bg, rgba(13, 17, 34, 0.95))',
-          border: '1px solid var(--cyan-glow, rgba(56, 189, 248, 0.3))',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.8), 0 0 32px rgba(56, 189, 248, 0.15)',
-          borderRadius: '20px',
           padding: '28px',
           animation: 'popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: 'var(--text-main)' }}>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: 'var(--fg)' }}>
             Create New Canvas
           </h2>
           <button
@@ -81,7 +77,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             style={{
               background: 'transparent',
               border: 'none',
-              color: 'var(--text-sub)',
+              color: 'var(--faint)',
               fontSize: '18px',
               cursor: 'pointer',
             }}
@@ -93,8 +89,8 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         <form onSubmit={handleSubmit}>
           {/* Room Title Field */}
           <div className="field" style={{ marginBottom: '16px' }}>
-            <label htmlFor="create-title" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent, #38bdf8)' }}>
-              Canvas Title <span style={{ color: 'var(--red, #f87171)' }}>*</span>
+            <label htmlFor="create-title">
+              Canvas Title <span style={{ color: 'var(--red)' }}>*</span>
             </label>
             <input
               id="create-title"
@@ -106,11 +102,11 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               disabled={loading}
               autoFocus
               style={{
-                borderColor: touched && !isTitleValid ? 'var(--red, #f87171)' : undefined,
+                borderColor: touched && !isTitleValid ? 'var(--red)' : undefined,
               }}
             />
             {touched && !isTitleValid && (
-              <span style={{ color: 'var(--red, #f87171)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+              <span style={{ color: 'var(--red)', fontSize: '11px', marginTop: '4px', display: 'block', fontFamily: 'var(--font-mono)' }}>
                 Please enter a title for your canvas.
               </span>
             )}
@@ -149,16 +145,11 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           <div style={{ display: 'flex', gap: '12px' }}>
             <button
               type="button"
+              className="btn-secondary"
               onClick={onClose}
               style={{
                 flex: 1,
-                background: 'transparent',
-                border: '1px solid var(--surface-border, rgba(255,255,255,0.12))',
-                color: 'var(--text-sub)',
-                borderRadius: '12px',
                 padding: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
               }}
             >
               Cancel
@@ -166,19 +157,13 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
             <button
               type="submit"
+              className="btn-primary"
               disabled={isSubmitDisabled}
               style={{
                 flex: 2,
-                background: isSubmitDisabled
-                  ? 'rgba(56, 189, 248, 0.2)'
-                  : 'linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)',
-                color: isSubmitDisabled ? 'rgba(255,255,255,0.4)' : '#070913',
-                border: 'none',
-                borderRadius: '12px',
                 padding: '12px',
-                fontWeight: 700,
+                opacity: isSubmitDisabled ? 0.45 : 1,
                 cursor: isSubmitDisabled ? 'not-allowed' : 'pointer',
-                boxShadow: isSubmitDisabled ? 'none' : '0 8px 24px rgba(56, 189, 248, 0.3)',
               }}
             >
               {loading ? 'Creating...' : 'Create Canvas →'}

@@ -46,15 +46,16 @@ export const RecentRoomsList: React.FC<RecentRoomsListProps> = ({
         <span
           style={{
             fontSize: '11px',
+            fontFamily: 'var(--font-mono)',
             letterSpacing: '1px',
             textTransform: 'uppercase',
-            color: 'var(--text-sub)',
+            color: 'var(--muted)',
             fontWeight: 600,
           }}
         >
           Recent Canvases
         </span>
-        <span style={{ fontSize: '11px', color: 'var(--text-sub)', opacity: 0.7 }}>
+        <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--faint)' }}>
           Saved locally
         </span>
       </div>
@@ -77,41 +78,33 @@ export const RecentRoomsList: React.FC<RecentRoomsListProps> = ({
               alignItems: 'center',
               justifyContent: 'space-between',
               background: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid var(--surface-border, rgba(255, 255, 255, 0.08))',
-              borderRadius: '10px',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)',
               padding: '8px 12px',
               transition: 'all 0.15s ease',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span
-                style={{
-                  background: 'rgba(56, 189, 248, 0.12)',
-                  color: 'var(--accent, #38bdf8)',
-                  padding: '3px 8px',
-                  borderRadius: '6px',
-                  fontFamily: 'monospace',
-                  fontWeight: 700,
-                  fontSize: '13px',
-                }}
-              >
+              <span className="code-badge">
                 #{room.code}
               </span>
               {room.isOwner && (
                 <span
                   style={{
                     fontSize: '10px',
-                    background: 'rgba(168, 85, 247, 0.2)',
-                    color: 'var(--violet, #c084fc)',
+                    fontFamily: 'var(--font-mono)',
+                    background: 'rgba(167, 139, 250, 0.15)',
+                    color: 'var(--violet)',
+                    border: '1px solid rgba(167, 139, 250, 0.3)',
                     padding: '2px 6px',
-                    borderRadius: '4px',
+                    borderRadius: 'var(--radius-sm)',
                     fontWeight: 600,
                   }}
                 >
                   Owner
                 </span>
               )}
-              <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
+              <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>
                 {formatRelativeTime(room.joinedAt)}
               </span>
             </div>
@@ -119,17 +112,14 @@ export const RecentRoomsList: React.FC<RecentRoomsListProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button
                 type="button"
+                className="btn-secondary"
                 onClick={() => onRejoin(room.code)}
                 style={{
-                  background: 'transparent',
-                  border: '1px solid rgba(56, 189, 248, 0.3)',
-                  color: 'var(--accent, #38bdf8)',
                   fontSize: '11px',
                   padding: '4px 10px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  transition: 'all 0.15s ease',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--accent)',
+                  borderColor: 'var(--accent-border)',
                 }}
               >
                 Rejoin →
@@ -142,8 +132,7 @@ export const RecentRoomsList: React.FC<RecentRoomsListProps> = ({
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'var(--text-sub)',
-                  opacity: 0.6,
+                  color: 'var(--faint)',
                   cursor: 'pointer',
                   padding: '4px 6px',
                   fontSize: '14px',
