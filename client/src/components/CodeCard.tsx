@@ -50,41 +50,32 @@ export const CodeCard: React.FC<CodeCardProps> = ({ card, onGrab, onMove, onCode
 
     onGrab(card.id);
 
-    const targetElem = e.currentTarget;
-    const pointerId = e.pointerId;
-
+    const startX = e.clientX;
+    const startY = e.clientY;
     const rect = cardRef.current.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
+    let isDragging = false;
 
     const handlePointerMove = (ev: PointerEvent) => {
-      const newX = ev.clientX - offsetX;
-      const newY = ev.clientY - offsetY;
-      if (cardRef.current) {
+      const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
+      if (!isDragging && dist > 3) {
+        isDragging = true;
+      }
+      if (isDragging && cardRef.current) {
+        const newX = ev.clientX - offsetX;
+        const newY = ev.clientY - offsetY;
         cardRef.current.style.left = `${newX}px`;
         cardRef.current.style.top = `${newY}px`;
+        onMove(card.id, newX, newY);
       }
-      onMove(card.id, newX, newY);
     };
 
-    const handlePointerUp = (ev: PointerEvent) => {
-      try {
-        if (targetElem && targetElem.hasPointerCapture(ev.pointerId)) {
-          targetElem.releasePointerCapture(ev.pointerId);
-        }
-      } catch (_err) {
-        // ignore
-      }
+    const handlePointerUp = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('pointercancel', handlePointerUp);
     };
-
-    try {
-      targetElem.setPointerCapture(pointerId);
-    } catch (_err) {
-      // ignore
-    }
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
@@ -118,6 +109,11 @@ export const CodeCard: React.FC<CodeCardProps> = ({ card, onGrab, onMove, onCode
     }
   };
 
+  const toggleEditing = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setIsEditing(prev => !prev);
+  };
+
   const highlightedHtml = highlightCode(card.rawText);
 
   return (
@@ -145,12 +141,26 @@ export const CodeCard: React.FC<CodeCardProps> = ({ card, onGrab, onMove, onCode
           <i className="dg" />
         </div>
         <span className="fname">{card.filename}</span>
-        <button className="copybtn" data-copy type="button" onClick={handleCopy}>
-          {copied ? 'Copied' : 'Copy'}
-        </button>
+
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
+          <button
+            className="copybtn"
+            type="button"
+            onClick={toggleEditing}
+            style={{
+              borderColor: isEditing ? 'var(--accent-border)' : 'var(--border)',
+              color: isEditing ? 'var(--accent)' : 'var(--muted)',
+            }}
+          >
+            {isEditing ? '✓ Done' : '✏️ Edit'}
+          </button>
+          <button className="copybtn" data-copy type="button" onClick={handleCopy}>
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
       </div>
 
-      {/* Card Body — Double-Click to Edit & Syntax Color Coded */}
+      {/* Card Body — Double-Click or Click Edit Button to Rewrite */}
       <div className="card-body-editor" style={{ position: 'relative' }}>
         {isEditing ? (
           <textarea
@@ -159,6 +169,7 @@ export const CodeCard: React.FC<CodeCardProps> = ({ card, onGrab, onMove, onCode
             onChange={handleTextChange}
             onKeyDown={handleKeyDownTextarea}
             onBlur={() => setIsEditing(false)}
+            onPointerDown={(e) => e.stopPropagation()}
             placeholder="Paste or type code here..."
             spellCheck={false}
             style={{
@@ -182,8 +193,8 @@ export const CodeCard: React.FC<CodeCardProps> = ({ card, onGrab, onMove, onCode
           />
         ) : (
           <pre
-            onDoubleClick={() => setIsEditing(true)}
-            title="Double-click to edit code"
+            onDoubleClick={toggleEditing}
+            title="Double-click or click ✏️ Edit in header to rewrite code"
             dangerouslySetInnerHTML={{ __html: highlightedHtml }}
             style={{
               margin: 0,
