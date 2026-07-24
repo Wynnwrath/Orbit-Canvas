@@ -426,10 +426,12 @@ input:focus {
   .roomchip, .live { display: none; }
 }
 
-/* ---------- Code card ---------- */
+/* ---------- Adaptive Code card ---------- */
 .code-card {
   position: fixed;
-  width: min(400px, 86vw);
+  width: fit-content;
+  min-width: 340px;
+  max-width: min(680px, 90vw);
   background: var(--card);
   border: 1px solid rgba(34, 211, 238, 0.22);
   border-radius: 14px;
@@ -438,6 +440,7 @@ input:focus {
   box-shadow: var(--shadow-card);
   z-index: 20;
   overflow: hidden;
+  transition: max-width 0.15s ease;
 }
 
 .card-head {

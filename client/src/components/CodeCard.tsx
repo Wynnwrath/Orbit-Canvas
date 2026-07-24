@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 export interface CodeCardData {
   id: string;
@@ -23,6 +23,20 @@ export const CodeCard: React.FC<CodeCardProps> = ({ card, onGrab, onMove, onCode
   const cardRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [copied, setCopied] = useState(false);
+
+  // Dynamic Height calculation based on scrollHeight
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const computedHeight = Math.max(textareaRef.current.scrollHeight, 120);
+      textareaRef.current.style.height = `${computedHeight}px`;
+    }
+  }, [card.rawText]);
+
+  // Calculate dynamic card width based on longest line of text
+  const lines = card.rawText.split('\n');
+  const longestLineCharCount = lines.reduce((max, line) => Math.max(max, line.length), 0);
+  const calculatedWidth = Math.min(Math.max(longestLineCharCount * 8 + 48, 360), 650);
 
   const handlePointerDownHeader = (e: React.PointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('button, input, textarea')) return;
@@ -103,6 +117,7 @@ export const CodeCard: React.FC<CodeCardProps> = ({ card, onGrab, onMove, onCode
         left: `${card.x}px`,
         top: `${card.y}px`,
         zIndex: card.zIndex,
+        width: `${calculatedWidth}px`,
       }}
       onClick={() => onGrab(card.id)}
     >
@@ -117,7 +132,7 @@ export const CodeCard: React.FC<CodeCardProps> = ({ card, onGrab, onMove, onCode
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <div className="card-body-editor" style={{ position: 'relative', minHeight: '120px' }}>
+      <div className="card-body-editor" style={{ position: 'relative' }}>
         <textarea
           ref={textareaRef}
           value={card.rawText}
@@ -126,7 +141,7 @@ export const CodeCard: React.FC<CodeCardProps> = ({ card, onGrab, onMove, onCode
           spellCheck={false}
           style={{
             width: '100%',
-            minHeight: '140px',
+            minHeight: '120px',
             background: 'transparent',
             color: 'var(--ink)',
             fontFamily: 'var(--font-mono)',
@@ -134,10 +149,13 @@ export const CodeCard: React.FC<CodeCardProps> = ({ card, onGrab, onMove, onCode
             lineHeight: '1.6',
             border: 'none',
             outline: 'none',
-            resize: 'both',
+            resize: 'none',
             padding: '12px 14px',
-            whiteSpace: 'pre',
+            whiteSpace: 'pre-wrap',
+            overflowWrap: 'break-word',
+            wordBreak: 'break-word',
             boxSizing: 'border-box',
+            overflow: 'hidden',
           }}
         />
       </div>
