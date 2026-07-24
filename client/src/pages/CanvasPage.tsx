@@ -42,8 +42,10 @@ export const CanvasPage: React.FC = () => {
   const [mode, setMode] = useState<'idle' | 'pen' | 'lasso'>('idle');
   const [zTop, setZTop] = useState(40);
   const [zoom, setZoom] = useState<number>(1.0);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
 
-  // Cards state — Clean start (no default starter cards)
+  // Cards state
   const [cards, setCards] = useState<CodeCardData[]>([]);
 
   // Sync Cards Hook
@@ -73,6 +75,26 @@ export const CanvasPage: React.FC = () => {
     visible: false,
     analyzing: false,
   });
+
+  // Spacebar pan key listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+        setIsSpacePressed(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setIsSpacePressed(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   // Welcome toast
   useEffect(() => {
@@ -145,15 +167,29 @@ export const CanvasPage: React.FC = () => {
   // Zoom handlers
   const handleZoomIn = () => setZoom(z => Math.min(2.5, +(z + 0.15).toFixed(2)));
   const handleZoomOut = () => setZoom(z => Math.max(0.4, +(z - 0.15).toFixed(2)));
-  const handleResetZoom = () => setZoom(1.0);
+  const handleResetZoom = () => {
+    setZoom(1.0);
+    setPan({ x: 0, y: 0 });
+  };
 
-  // Wheel zoom handler
+  // Mouse-Pointer-Centered Wheel Zoom handler
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
-        const delta = e.deltaY < 0 ? 0.08 : -0.08;
-        setZoom(z => Math.min(2.5, Math.max(0.4, +(z + delta).toFixed(2))));
+        const delta = e.deltaY < 0 ? 0.1 : -0.1;
+        setZoom(currentZoom => {
+          const nextZoom = Math.min(2.5, Math.max(0.4, +(currentZoom + delta).toFixed(2)));
+          if (nextZoom !== currentZoom) {
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+            setPan(currentPan => ({
+              x: mouseX - (mouseX - currentPan.x) * (nextZoom / currentZoom),
+              y: mouseY - (mouseY - currentPan.y) * (nextZoom / currentZoom),
+            }));
+          }
+          return nextZoom;
+        });
       }
     };
     window.addEventListener('wheel', handleWheel, { passive: false });
@@ -192,8 +228,8 @@ export const CanvasPage: React.FC = () => {
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     const m = 95;
-    const clientX = e.clientX / zoom;
-    const clientY = e.clientY / zoom;
+    const clientX = (e.clientX - pan.x) / zoom;
+    const clientY = (e.clientY - pan.y) / zoom;
     const x = Math.min(Math.max(clientX, m), window.innerWidth / zoom - m);
     const y = Math.min(Math.max(clientY, m), window.innerHeight / zoom - m);
     setRadialState({ open: true, x, y });
@@ -225,7 +261,7 @@ export const CanvasPage: React.FC = () => {
       const newCard: CodeCardData = {
         id: newCardId,
         filename: 'snippet.ts',
-        rawText: `// Type or paste your code here\nconst greeting = "Hello, Orbit Canvas!";`,
+        rawText: `// Double click to edit code!\nconst greeting = "Hello, Orbit Canvas!";`,
         x: Math.min(Math.max(x + 40, 12), window.innerWidth / zoom - 380),
         y: Math.min(Math.max(y - 20, 80), window.innerHeight / zoom - 200),
         zIndex: newZ,
@@ -233,7 +269,7 @@ export const CanvasPage: React.FC = () => {
       };
       setCards(prev => [...prev, newCard]);
       emitCardAdd(newCard);
-      showToast('Code card dropped');
+      showToast('Code card dropped — double click to edit!');
     }
   };
 
@@ -252,22 +288,45 @@ export const CanvasPage: React.FC = () => {
 
   // Pointer move broadcast for local cursor
   const handlePointerMoveCanvas = (e: React.PointerEvent) => {
-    const canvasX = e.clientX / zoom;
-    const canvasY = e.clientY / zoom;
+    const canvasX = (e.clientX - pan.x) / zoom;
+    const canvasY = (e.clientY - pan.y) / zoom;
     emitCursorMove(canvasX, canvasY);
   };
 
-  // Pointer Down handling for canvas interactions
+  // Pointer Down handling for canvas interactions & Middle Click / Spacebar Panning
   const handlePointerDownCanvas = (e: React.PointerEvent) => {
     if (radialState.open && !(e.target as HTMLElement).closest('#radial')) {
       closeRadial();
     }
 
+    // Canvas Background Panning (Middle click or Spacebar + Left click)
+    if (e.button === 1 || isSpacePressed) {
+      const startClientX = e.clientX;
+      const startClientY = e.clientY;
+      const startPanX = pan.x;
+      const startPanY = pan.y;
+
+      const handlePanMove = (ev: PointerEvent) => {
+        const dx = ev.clientX - startClientX;
+        const dy = ev.clientY - startClientY;
+        setPan({ x: startPanX + dx, y: startPanY + dy });
+      };
+
+      const handlePanUp = () => {
+        window.removeEventListener('pointermove', handlePanMove);
+        window.removeEventListener('pointerup', handlePanUp);
+      };
+
+      window.addEventListener('pointermove', handlePanMove);
+      window.addEventListener('pointerup', handlePanUp);
+      return;
+    }
+
     if (e.button !== 0) return;
     if ((e.target as HTMLElement).closest('button, input, textarea, .topbar, #radial, .code-card, .sticky, .zoom-controls')) return;
 
-    const startX = e.clientX / zoom;
-    const startY = e.clientY / zoom;
+    const startX = (e.clientX - pan.x) / zoom;
+    const startY = (e.clientY - pan.y) / zoom;
 
     // Pen mode drawing
     if (mode === 'pen') {
@@ -275,8 +334,8 @@ export const CanvasPage: React.FC = () => {
       setCurrentStroke(d);
 
       const handleMove = (ev: PointerEvent) => {
-        const curX = ev.clientX / zoom;
-        const curY = ev.clientY / zoom;
+        const curX = (ev.clientX - pan.x) / zoom;
+        const curY = (ev.clientY - pan.y) / zoom;
         d += ` L ${curX} ${curY}`;
         setCurrentStroke(d);
       };
@@ -304,8 +363,8 @@ export const CanvasPage: React.FC = () => {
       setLassoRect({ x: sx, y: sy, w: 0, h: 0, visible: true, analyzing: false });
 
       const handleMove = (ev: PointerEvent) => {
-        const moveX = ev.clientX / zoom;
-        const moveY = ev.clientY / zoom;
+        const moveX = (ev.clientX - pan.x) / zoom;
+        const moveY = (ev.clientY - pan.y) / zoom;
         const curX = Math.min(sx, moveX);
         const curY = Math.min(sy, moveY);
         const w = Math.abs(moveX - sx);
@@ -318,8 +377,8 @@ export const CanvasPage: React.FC = () => {
         window.removeEventListener('pointerup', handleUp);
         window.removeEventListener('pointercancel', handleUp);
 
-        const endX = ev.clientX / zoom;
-        const endY = ev.clientY / zoom;
+        const endX = (ev.clientX - pan.x) / zoom;
+        const endY = (ev.clientY - pan.y) / zoom;
         const finalW = Math.abs(endX - sx);
         const finalH = Math.abs(endY - sy);
 
@@ -434,7 +493,13 @@ export const CanvasPage: React.FC = () => {
 
   return (
     <div
-      style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative' }}
+      style={{
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        position: 'relative',
+        cursor: isSpacePressed ? 'grab' : 'default',
+      }}
       onContextMenu={handleContextMenu}
       onPointerDown={handlePointerDownCanvas}
       onPointerMove={handlePointerMoveCanvas}
@@ -448,12 +513,12 @@ export const CanvasPage: React.FC = () => {
         isLive={socketStatus === 'connected'}
       />
 
-      {/* Spatial Canvas Container with Zoom Transform */}
+      {/* Spatial Canvas Container with Mouse-Centered Zoom & Translation */}
       <div
         ref={viewportRef}
         className="canvas-spatial-viewport"
         style={{
-          transform: `scale(${zoom})`,
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           transformOrigin: '0 0',
           width: `${100 / zoom}vw`,
           height: `${100 / zoom}vh`,
