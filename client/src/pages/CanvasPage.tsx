@@ -108,18 +108,46 @@ export const CanvasPage: React.FC = () => {
   const initialPinchMidRef = useRef<{ x: number; y: number } | null>(null);
   const initialPanRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
+  // History stack for Ctrl+Z Undo
+  const historyStackRef = useRef<{ strokes: InkStroke[]; cards: CodeCardData[]; stickies: StickyData[] }[]>([]);
+
+  const saveHistorySnapshot = useCallback(() => {
+    historyStackRef.current.push({
+      strokes: [...strokes],
+      cards: [...cards],
+      stickies: [...stickies],
+    });
+    if (historyStackRef.current.length > 40) {
+      historyStackRef.current.shift();
+    }
+  }, [strokes, cards, stickies]);
+
+  const handleUndo = useCallback(() => {
+    if (historyStackRef.current.length === 0) {
+      showToast('Nothing to undo');
+      return;
+    }
+    const prevSnapshot = historyStackRef.current.pop()!;
+    setStrokes(prevSnapshot.strokes);
+    setCards(prevSnapshot.cards);
+    setStickies(prevSnapshot.stickies);
+    showToast('Undo performed');
+  }, [showToast]);
+
   // Individual deletion handlers
   const handleDeleteStroke = useCallback((strokeId: string) => {
+    saveHistorySnapshot();
     setStrokes(prev => prev.filter(s => s.id !== strokeId));
     emitStrokeDelete(strokeId);
     showToast('Erased ink stroke');
-  }, [emitStrokeDelete, showToast]);
+  }, [emitStrokeDelete, showToast, saveHistorySnapshot]);
 
   const handleDeleteCard = useCallback((cardId: string) => {
+    saveHistorySnapshot();
     setCards(prev => prev.filter(c => c.id !== cardId));
     emitCardDelete(cardId);
     showToast('Deleted code card');
-  }, [emitCardDelete, showToast]);
+  }, [emitCardDelete, showToast, saveHistorySnapshot]);
 
   // Spacebar pan key listener
   useEffect(() => {
@@ -321,10 +349,29 @@ export const CanvasPage: React.FC = () => {
           return nextZoom;
         });
       } else {
-        // Standard mouse wheel scroll or trackpad 2-finger swipe -> 2D Canvas Pan
+        // Normalize delta values depending on deltaMode (Pixel vs Line vs Page)
+        let scale = 1;
+        if (e.deltaMode === 1) scale = 24; // DOM_DELTA_LINE
+        else if (e.deltaMode === 2) scale = 400; // DOM_DELTA_PAGE
+
+        const rawDx = e.deltaX * scale;
+        const rawDy = e.deltaY * scale;
+
+        let moveX = 0;
+        let moveY = 0;
+
+        if (e.shiftKey) {
+          // Shift + Wheel converts vertical wheel spin to horizontal panning
+          moveX = rawDx !== 0 ? rawDx : rawDy;
+          moveY = 0;
+        } else {
+          moveX = rawDx;
+          moveY = rawDy;
+        }
+
         setPan(currentPan => ({
-          x: currentPan.x - e.deltaX,
-          y: currentPan.y - e.deltaY,
+          x: currentPan.x - moveX,
+          y: currentPan.y - moveY,
         }));
       }
     };
@@ -395,12 +442,14 @@ export const CanvasPage: React.FC = () => {
       setMode('lasso');
       showToast('Lasso armed — drag a box around drawings or code.');
     } else if (tool === 'trash') {
+      saveHistorySnapshot();
       setStrokes([]);
       setStickies([]);
       setCards([]);
       emitClearCanvas();
       showToast('Canvas cleared');
     } else if (tool === 'code') {
+      saveHistorySnapshot();
       const newCardId = `card-extra-${Date.now()}`;
       const newZ = zTop + 1;
       setZTop(newZ);
@@ -423,7 +472,7 @@ export const CanvasPage: React.FC = () => {
     }
   };
 
-  // Escape key handler
+  // Keyboard shortcut listener (Escape & Ctrl+Z / Cmd+Z Undo)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -431,10 +480,23 @@ export const CanvasPage: React.FC = () => {
         setMode('idle');
         setLassoRect({ x: 0, y: 0, w: 0, h: 0, visible: false, analyzing: false });
       }
+
+      // Check if user is actively typing in an input, textarea, or contentEditable element
+      const activeEl = document.activeElement;
+      const isInputFocused = activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        (activeEl as HTMLElement).isContentEditable
+      );
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !isInputFocused) {
+        e.preventDefault();
+        handleUndo();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [handleUndo]);
 
   // Pointer move broadcast for local cursor
   // Pointer move broadcast for local cursor
@@ -619,6 +681,7 @@ export const CanvasPage: React.FC = () => {
         window.removeEventListener('pointerup', handleUp);
         window.removeEventListener('pointercancel', handleUp);
 
+        saveHistorySnapshot();
         const newStroke: InkStroke = {
           id: `stroke-${Date.now()}`,
           d,
