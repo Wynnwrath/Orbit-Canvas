@@ -1,6 +1,7 @@
 /* client/src/styles/global.css */
 @import './tokens.css';
 @import './reset.css';
+@import './join-hero.css';
 
 /* Utility DotGrid background */
 .dotgrid {
@@ -101,11 +102,7 @@ body[data-mode="pen"], body[data-mode="lasso"] {
   border-radius: var(--radius-pill);
 }
 
-/* ---------- Join Page CSS ---------- */
-main {
-  position: relative;
-  width: min(408px, calc(100vw - 40px));
-}
+/* ---------- Join Page (old narrow card — overridden by join-hero layout) ---------- */
 
 .card {
   background: var(--glass);

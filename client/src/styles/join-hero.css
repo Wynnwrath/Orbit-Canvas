@@ -1,0 +1,267 @@
+/* ========== Join Page Hero Layout ========== */
+
+.join-hero {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 80px;
+  align-items: center;
+  min-height: 100vh;
+  padding: 40px 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Left Brand Column ---------- */
+.join-hero-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+/* ---------- Right Action Card ---------- */
+.join-action-card {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
+  border-radius: var(--radius-xl);
+  padding: 32px 30px 24px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-heavy);
+  max-width: 420px;
+  width: 100%;
+}
+
+.join-action-card .brand {
+  margin-bottom: 14px;
+}
+
+.join-action-card .brand h1 {
+  font-size: 18px;
+}
+
+/* ---------- Cosmic rings behind orbital (Layer 2) ---------- */
+.cosmic-rings {
+  position: fixed;
+  inset: 0;
+  background:
+    repeating-radial-gradient(
+      circle at 50% 50%,
+      transparent 0,
+      transparent 119px,
+      rgba(34, 211, 238, 0.025) 120px,
+      transparent 121px
+    ),
+    repeating-radial-gradient(
+      circle at 50% 50%,
+      transparent 0,
+      transparent 199px,
+      rgba(34, 211, 238, 0.018) 200px,
+      transparent 201px
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ---------- Orbital SVG Container ---------- */
+.orbital-container {
+  width: 320px;
+  height: 320px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* ---------- Brand Title ---------- */
+.hero-brand-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-brand-title-word {
+  font-size: clamp(32px, 5vw, 42px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--fg);
+  line-height: 1.1;
+}
+
+.hero-brand-title .beta-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-dim);
+  padding: 4px 10px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+/* ---------- Tagline ---------- */
+.hero-tagline-primary {
+  font-size: clamp(18px, 2.8vw, 24px);
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.3;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.hero-tagline-secondary {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 4px 0 0 0;
+  max-width: 440px;
+}
+
+/* ---------- Feature Pills ---------- */
+.feature-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.feature-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  will-change: transform;
+}
+
+/* ---------- Recent Workspace Card ---------- */
+.recent-workspace-card {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.recent-workspace-card .rw-info {
+  overflow: hidden;
+  text-align: left;
+}
+
+.recent-workspace-card .rw-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.recent-workspace-card .rw-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-workspace-card .rw-code {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+/* ---------- Dashboard Link ---------- */
+.dashboard-link-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.15s ease;
+}
+
+.dashboard-link-btn:hover {
+  color: var(--fg);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .join-hero {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 24px 16px;
+    min-height: auto;
+  }
+
+  .join-hero-left {
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .orbital-container {
+    width: 180px;
+    height: 180px;
+  }
+
+  .hero-brand-title {
+    justify-content: center;
+  }
+
+  .hero-tagline-primary {
+    font-size: 20px;
+  }
+
+  .feature-pills {
+    justify-content: center;
+  }
+
+  .join-action-card {
+    max-width: 100%;
+    padding: 24px 20px 20px;
+  }
+
+  .cosmic-rings {
+    opacity: 0.5;
+  }
+}
+
+@media (max-width: 480px) {
+  .join-hero {
+    padding: 20px 12px;
+    gap: 24px;
+  }
+
+  .orbital-container {
+    width: 140px;
+    height: 140px;
+  }
+
+  .hero-brand-title-word {
+    font-size: 28px;
+  }
+
+  .hero-tagline-primary {
+    font-size: 17px;
+  }
+
+  .hero-tagline-secondary {
+    font-size: 13px;
+  }
+}
