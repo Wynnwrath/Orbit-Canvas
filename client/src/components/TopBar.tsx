@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft,
+  SquaresFour,
+  DotsThreeVertical,
+  ShareNetwork,
+  FloppyDisk,
+  Image as ImageIcon,
+  X,
+  CloudArrowUp,
+  Camera,
+  House,
+} from '@phosphor-icons/react';
 
 interface TopBarProps {
   roomCode: string;
@@ -55,9 +67,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               transition: 'background 0.15s ease',
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
+            <ArrowLeft size={14} weight="regular" />
             <span className="nav-text">Home</span>
           </button>
 
@@ -79,13 +89,13 @@ export const TopBar: React.FC<TopBarProps> = ({
               borderRadius: 'var(--radius-sm)',
             }}
           >
+            <SquaresFour size={14} weight="regular" />
             <span className="nav-text">Dashboard</span>
           </button>
         </div>
 
         <div className="vr topbar-desktop-nav" />
 
-        {/* Dynamic Canvas Title Header */}
         <div 
           className="brand"
           style={{ position: 'relative', cursor: savedRooms.length > 1 ? 'pointer' : 'default' }}
@@ -107,22 +117,18 @@ export const TopBar: React.FC<TopBarProps> = ({
             <span style={{ fontSize: '10px', opacity: 0.6, marginLeft: '2px' }}>▼</span>
           )}
 
-          {/* Quick Canvas Switcher Dropdown */}
           {switcherOpen && savedRooms.length > 1 && (
             <div 
+              className="glass-medium"
               style={{
                 position: 'absolute',
                 top: 'calc(100% + 8px)',
                 left: 0,
-                background: 'rgba(15, 17, 26, 0.95)',
-                backdropFilter: 'blur(12px)',
-                border: '1px solid var(--border)',
                 borderRadius: 'var(--radius-md)',
                 padding: '6px',
                 minWidth: '220px',
                 zIndex: 9999,
                 boxShadow: 'var(--shadow-heavy)',
-                animation: 'fadeIn 0.15s ease'
               }}
               onClick={e => e.stopPropagation()}
             >
@@ -198,22 +204,24 @@ export const TopBar: React.FC<TopBarProps> = ({
         <div className="topbar-desktop-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           {onSave && (
             <button className="share" type="button" onClick={onSave} title="Save canvas state to cloud">
+              <FloppyDisk size={14} weight="regular" style={{ marginRight: '4px', display: 'inline', verticalAlign: 'middle' }} />
               Save
             </button>
           )}
 
           {onExport && (
             <button className="share" type="button" onClick={onExport} title="Export image screenshot of canvas">
+              <ImageIcon size={14} weight="regular" style={{ marginRight: '4px', display: 'inline', verticalAlign: 'middle' }} />
               Export
             </button>
           )}
 
           <button className="share" id="share" data-od-id="share-btn" onClick={onShare}>
+            <ShareNetwork size={14} weight="regular" style={{ marginRight: '4px', display: 'inline', verticalAlign: 'middle' }} />
             Share
           </button>
         </div>
 
-        {/* Mobile Overflow Menu Toggle Button */}
         <button
           className="mobile-overflow-btn"
           type="button"
@@ -221,15 +229,10 @@ export const TopBar: React.FC<TopBarProps> = ({
           title="More actions"
           aria-label="Toggle mobile menu"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="1" />
-            <circle cx="12" cy="5" r="1" />
-            <circle cx="12" cy="19" r="1" />
-          </svg>
+          <DotsThreeVertical size={18} weight="bold" />
         </button>
       </header>
 
-      {/* Mobile Slide-up Action Sheet Drawer */}
       {mobileMenuOpen && (
         <div className="mobile-drawer-overlay" onClick={() => setMobileMenuOpen(false)}>
           <div className="mobile-drawer" onClick={e => e.stopPropagation()}>
@@ -241,7 +244,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                 </span>
                 <span style={{ fontSize: '12px', opacity: 0.6, marginLeft: '6px' }}>#{roomCode}</span>
               </div>
-              <button className="close" onClick={() => setMobileMenuOpen(false)}>✕</button>
+              <button className="close" onClick={() => setMobileMenuOpen(false)}>
+                <X size={18} weight="bold" />
+              </button>
             </div>
 
             <div className="mobile-drawer-body">
@@ -249,7 +254,8 @@ export const TopBar: React.FC<TopBarProps> = ({
                 className="drawer-action-btn primary"
                 onClick={() => { setMobileMenuOpen(false); onShare(); }}
               >
-                🔗 Share Room Link
+                <ShareNetwork size={16} weight="regular" style={{ marginRight: '6px' }} />
+                Share Room Link
               </button>
 
               {onSave && (
@@ -257,7 +263,8 @@ export const TopBar: React.FC<TopBarProps> = ({
                   className="drawer-action-btn"
                   onClick={() => { setMobileMenuOpen(false); onSave(); }}
                 >
-                  ☁️ Save Canvas to Cloud
+                  <CloudArrowUp size={16} weight="regular" style={{ marginRight: '6px' }} />
+                  Save Canvas to Cloud
                 </button>
               )}
 
@@ -266,7 +273,8 @@ export const TopBar: React.FC<TopBarProps> = ({
                   className="drawer-action-btn"
                   onClick={() => { setMobileMenuOpen(false); onExport(); }}
                 >
-                  📸 Export PNG Image
+                  <Camera size={16} weight="regular" style={{ marginRight: '6px' }} />
+                  Export PNG Image
                 </button>
               )}
 
@@ -276,14 +284,16 @@ export const TopBar: React.FC<TopBarProps> = ({
                 className="drawer-action-btn"
                 onClick={() => { setMobileMenuOpen(false); navigate('/dashboard'); }}
               >
-                📊 Dashboard
+                <SquaresFour size={16} weight="regular" style={{ marginRight: '6px' }} />
+                Dashboard
               </button>
 
               <button
                 className="drawer-action-btn"
                 onClick={() => { setMobileMenuOpen(false); navigate('/'); }}
               >
-                🏠 Main Menu
+                <House size={16} weight="regular" style={{ marginRight: '6px' }} />
+                Main Menu
               </button>
             </div>
           </div>
@@ -292,4 +302,3 @@ export const TopBar: React.FC<TopBarProps> = ({
     </>
   );
 };
-

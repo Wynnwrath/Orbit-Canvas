@@ -1,4 +1,5 @@
 import React from 'react';
+import { X } from '@phosphor-icons/react';
 
 export interface PenToolbarProps {
   color: string;
@@ -83,7 +84,7 @@ export const PenToolbar: React.FC<PenToolbarProps> = ({
         onClick={onClose}
         title="Close Pen (Esc)"
       >
-        ✕
+        <X size={14} weight="bold" />
       </button>
     </div>
   );

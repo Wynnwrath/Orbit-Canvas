@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LinkSimple, Trash, ArrowLeft, Palette } from '@phosphor-icons/react';
 import { DotGridBg } from '../components/DotGridBg';
 import { BrandHeader } from '../components/BrandHeader';
 import { Toast } from '../components/Toast';
@@ -31,7 +32,6 @@ export const DashboardPage: React.FC = () => {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [liveBatch, setLiveBatch] = useState<Record<string, { title?: string; previewUrl?: string; snapshot?: MiniCanvasSnapshot; activeCount?: number }>>({});
 
-  // Sync live metadata for saved rooms from server
   useEffect(() => {
     if (savedRooms.length === 0) return;
     const fetchBatch = async () => {
@@ -87,7 +87,6 @@ export const DashboardPage: React.FC = () => {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', position: 'relative', overflowX: 'hidden' }}>
       <DotGridBg masked />
 
-      {/* Floating Glass Navigation */}
       <nav
         style={{
           position: 'fixed',
@@ -111,9 +110,13 @@ export const DashboardPage: React.FC = () => {
               borderRadius: 'var(--radius-lg)',
               fontSize: '13px',
               boxShadow: 'var(--shadow-topbar)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
             }}
           >
-            ← Home
+            <ArrowLeft size={14} weight="regular" />
+            Home
           </button>
           <div
             className="glass-card"
@@ -142,7 +145,6 @@ export const DashboardPage: React.FC = () => {
         </button>
       </nav>
 
-      {/* Main Dashboard Container */}
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 24px 40px 24px', width: '100%' }}>
         <div style={{ marginBottom: '32px' }}>
           <h1 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.5px', color: 'var(--fg)' }}>
@@ -154,7 +156,6 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {savedRooms.length === 0 ? (
-          /* Standardized Glass Empty State */
           <div
             className="glass-card"
             style={{
@@ -163,7 +164,9 @@ export const DashboardPage: React.FC = () => {
               borderStyle: 'dashed',
             }}
           >
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎨</div>
+            <div style={{ fontSize: '48px', marginBottom: '16px', color: 'var(--accent)', display: 'flex', justifyContent: 'center' }}>
+              <Palette size={48} weight="light" />
+            </div>
             <h3 style={{ fontSize: '20px', fontWeight: 700, margin: '0 0 8px 0', color: 'var(--fg)' }}>
               No Canvases Created Yet
             </h3>
@@ -183,7 +186,6 @@ export const DashboardPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          /* Standardized Glass Card Grid */
           <div
             style={{
               display: 'grid',
@@ -217,7 +219,6 @@ export const DashboardPage: React.FC = () => {
                       : 'var(--shadow-heavy)',
                   }}
                 >
-                  {/* Real Vector / Snapshot Canvas Preview Box */}
                   <MiniCanvasPreview
                     previewUrl={previewImage}
                     snapshot={snapshotData}
@@ -225,7 +226,6 @@ export const DashboardPage: React.FC = () => {
                     isHovered={isHovered}
                   />
 
-                  {/* Card Body */}
                   <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
@@ -245,7 +245,7 @@ export const DashboardPage: React.FC = () => {
                               fontWeight: 600,
                             }}
                           >
-                            ★ Most Recent
+                            Most Recent
                           </span>
                         )}
                         {room.isOwner && (
@@ -268,17 +268,16 @@ export const DashboardPage: React.FC = () => {
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: 'var(--muted)', marginBottom: '16px' }}>
                         <span style={{ fontFamily: 'var(--font-mono)' }}>
-                          👁️ Opened {formatRelativeTime(room.lastOpenedAt || room.joinedAt)}
+                          Opened {formatRelativeTime(room.lastOpenedAt || room.joinedAt)}
                         </span>
                         {activeCount > 0 && (
                           <span style={{ color: 'var(--live)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
-                            ● {activeCount} active user{activeCount > 1 ? 's' : ''}
+                            &#9679; {activeCount} active user{activeCount > 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Card Actions Footer */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
                       <button
                         type="button"
@@ -290,7 +289,7 @@ export const DashboardPage: React.FC = () => {
                           fontSize: '13px',
                         }}
                       >
-                        Open Canvas →
+                        Open Canvas
                       </button>
 
                       <button
@@ -301,9 +300,12 @@ export const DashboardPage: React.FC = () => {
                         style={{
                           padding: '9px 12px',
                           fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         }}
                       >
-                        🔗
+                        <LinkSimple size={16} weight="regular" />
                       </button>
 
                       <button
@@ -319,9 +321,12 @@ export const DashboardPage: React.FC = () => {
                           cursor: 'pointer',
                           fontSize: '13px',
                           transition: 'background 0.15s',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         }}
                       >
-                        🗑️
+                        <Trash size={16} weight="regular" />
                       </button>
                     </div>
                   </div>

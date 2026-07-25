@@ -1,4 +1,5 @@
 import React from 'react';
+import { Minus, Plus, Crosshair } from '@phosphor-icons/react';
 
 interface ZoomControlsProps {
   zoom: number;
@@ -30,16 +31,12 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
         gap: '8px',
       }}
     >
-      {/* Position Coordinates Badge */}
       <div
-        className="coord-badge"
+        className="coord-badge glass-medium"
         style={{
           fontFamily: 'var(--font-mono)',
           fontSize: '11px',
           color: 'var(--muted)',
-          background: 'rgba(18, 20, 26, 0.75)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
           borderRadius: 'var(--radius-md)',
           padding: '6px 10px',
           letterSpacing: '0.04em',
@@ -48,16 +45,12 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
         X: {Math.round(-pan.x)} Y: {Math.round(-pan.y)}
       </div>
 
-      {/* Zoom Control Buttons */}
       <div
-        className="zoom-controls"
+        className="zoom-controls glass-medium"
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '4px',
-          background: 'rgba(18, 20, 26, 0.75)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
           borderRadius: 'var(--radius-md)',
           padding: '4px 6px',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.36)',
@@ -79,12 +72,10 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '16px',
-            fontWeight: 600,
             transition: 'background 0.15s ease',
           }}
         >
-          −
+          <Minus size={14} weight="bold" />
         </button>
 
         <button
@@ -108,11 +99,7 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
             gap: '4px',
           }}
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 8v8" />
-            <path d="M8 12h8" />
-          </svg>
+          <Crosshair size={11} weight="regular" />
           {percentStr}
         </button>
 
@@ -132,12 +119,10 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '16px',
-            fontWeight: 600,
             transition: 'background 0.15s ease',
           }}
         >
-          +
+          <Plus size={14} weight="bold" />
         </button>
       </div>
     </div>

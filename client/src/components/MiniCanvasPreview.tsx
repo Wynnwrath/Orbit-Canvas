@@ -1,4 +1,5 @@
 import React from 'react';
+import { Sparkle } from '@phosphor-icons/react';
 
 export interface MiniCanvasSnapshot {
   cards?: Array<{ id: string; filename: string; rawText: string; x: number; y: number }>;
@@ -181,7 +182,9 @@ export const MiniCanvasPreview: React.FC<MiniCanvasPreviewProps> = ({
       ) : (
         /* Fallback Default Design Icon */
         <div style={{ textAlign: 'center', pointerEvents: 'none', transform: isHovered ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.25s ease' }}>
-          <div style={{ fontSize: '28px', opacity: 0.6, marginBottom: '2px' }}>✨</div>
+          <div style={{ fontSize: '28px', opacity: 0.6, marginBottom: '2px', display: 'flex', justifyContent: 'center', color: 'var(--accent)' }}>
+            <Sparkle size={28} weight="regular" />
+          </div>
           <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--faint)' }}>
             Spatial Whiteboard
           </span>

@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { Sparkle, X } from '@phosphor-icons/react';
 
 export interface StickyData {
   id: string;
@@ -93,9 +94,7 @@ export const AISticky: React.FC<AIStickyProps> = ({
     >
       <div className="sticky-head" onPointerDown={handlePointerDownHeader}>
         <span className="badge">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l2.2 6.2L20 10l-5.8 1.8L12 18l-2.2-6.2L4 10l5.8-1.8L12 2Z" />
-          </svg>
+          <Sparkle size={11} weight="fill" />
           SMART TUTOR
         </span>
         <button
@@ -104,7 +103,7 @@ export const AISticky: React.FC<AIStickyProps> = ({
           type="button"
           onClick={() => onDismiss(sticky.id)}
         >
-          ×
+          <X size={14} weight="bold" />
         </button>
       </div>
       <div className="sticky-body">
