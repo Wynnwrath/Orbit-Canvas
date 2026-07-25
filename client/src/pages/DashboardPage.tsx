@@ -266,17 +266,10 @@ export const DashboardPage: React.FC = () => {
                         )}
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', color: 'var(--muted)', marginBottom: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <span style={{ fontFamily: 'var(--font-mono)' }}>
-                            👁️ Opened {formatRelativeTime(room.lastOpenedAt || room.joinedAt)}
-                          </span>
-                          {room.createdAt && Math.abs((room.lastOpenedAt || room.joinedAt) - room.createdAt) > 60000 && (
-                            <span style={{ fontFamily: 'var(--font-mono)', opacity: 0.75 }}>
-                              • Created {formatRelativeTime(room.createdAt)}
-                            </span>
-                          )}
-                        </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: 'var(--muted)', marginBottom: '16px' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)' }}>
+                          👁️ Opened {formatRelativeTime(room.lastOpenedAt || room.joinedAt)}
+                        </span>
                         {activeCount > 0 && (
                           <span style={{ color: 'var(--live)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
                             ● {activeCount} active user{activeCount > 1 ? 's' : ''}
