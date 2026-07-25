@@ -9,10 +9,10 @@ import { Server as SocketIOServer } from 'socket.io';
 import { connectDB } from './config/db.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 const server = http.createServer(app);
