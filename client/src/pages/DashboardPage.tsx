@@ -191,7 +191,7 @@ export const DashboardPage: React.FC = () => {
               gap: '24px',
             }}
           >
-            {savedRooms.map(room => {
+            {savedRooms.map((room, index) => {
               const liveData = liveBatch[room.code];
               const displayTitle = liveData?.title || room.title || `Workspace #${room.code}`;
               const previewImage = liveData?.previewUrl;
@@ -228,10 +228,26 @@ export const DashboardPage: React.FC = () => {
                   {/* Card Body */}
                   <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
                         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--fg)' }}>
                           {displayTitle}
                         </h3>
+                        {index === 0 && (
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              fontFamily: 'var(--font-mono)',
+                              background: 'rgba(56, 189, 248, 0.15)',
+                              color: 'var(--accent)',
+                              border: '1px solid rgba(56, 189, 248, 0.3)',
+                              padding: '2px 6px',
+                              borderRadius: 'var(--radius-sm)',
+                              fontWeight: 600,
+                            }}
+                          >
+                            ★ Most Recent
+                          </span>
+                        )}
                         {room.isOwner && (
                           <span
                             style={{
@@ -250,8 +266,17 @@ export const DashboardPage: React.FC = () => {
                         )}
                       </div>
 
-                      <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--muted)', marginBottom: '16px' }}>
-                        <span style={{ fontFamily: 'var(--font-mono)' }}>🕒 {formatRelativeTime(room.joinedAt)}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', color: 'var(--muted)', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)' }}>
+                            👁️ Opened {formatRelativeTime(room.lastOpenedAt || room.joinedAt)}
+                          </span>
+                          {room.createdAt && Math.abs((room.lastOpenedAt || room.joinedAt) - room.createdAt) > 60000 && (
+                            <span style={{ fontFamily: 'var(--font-mono)', opacity: 0.75 }}>
+                              • Created {formatRelativeTime(room.createdAt)}
+                            </span>
+                          )}
+                        </div>
                         {activeCount > 0 && (
                           <span style={{ color: 'var(--live)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
                             ● {activeCount} active user{activeCount > 1 ? 's' : ''}

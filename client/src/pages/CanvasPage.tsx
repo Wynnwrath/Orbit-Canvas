@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { CanvasBg } from '../components/CanvasBg';
 import { TopBar } from '../components/TopBar';
@@ -24,13 +24,22 @@ import { useSocket } from '../hooks/useSocket';
 import { usePresence } from '../hooks/usePresence';
 import { useSyncInk } from '../hooks/useSyncInk';
 import { useSyncCards } from '../hooks/useSyncCards';
+import { useSavedRooms } from '../hooks/useSavedRooms';
 import { apiRequest } from '../services/api';
 import { captureCanvasRegion } from '../utils/snapshotUtils';
 
 export const CanvasPage: React.FC = () => {
   const { roomCode = '8F2A' } = useParams<{ roomCode: string }>();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const userName = searchParams.get('name') || 'You';
+
+  const { savedRooms, addSavedRoom } = useSavedRooms();
+  const [roomTitle, setRoomTitle] = useState<string>(() => {
+    const uppercaseCode = (roomCode || '8F2A').toUpperCase();
+    const match = savedRooms.find(r => r.code === uppercaseCode);
+    return match?.title || '';
+  });
 
   const { toastMessage, showToast } = useToast();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -166,42 +175,49 @@ export const CanvasPage: React.FC = () => {
     let isMounted = true;
     const restoreRoomState = async () => {
       try {
-        const res = await apiRequest<{ snapshot?: { cards?: any[]; strokes?: any[]; stickies?: any[] } }>(`/api/rooms/${roomCode}`);
-        if (isMounted && res.ok && res.data?.snapshot) {
-          const snapshot = res.data.snapshot;
-          if (snapshot.cards && snapshot.cards.length > 0) {
-            setCards(snapshot.cards.map((c: any) => ({
-              id: c.id,
-              filename: c.filename || 'snippet.ts',
-              rawText: c.rawText || c.content || '',
-              x: c.x,
-              y: c.y,
-              zIndex: c.zIndex || 20,
-              isExtra: c.id !== 'card-1' && c.id !== 'card1',
-            })));
-          }
-          if (snapshot.strokes && snapshot.strokes.length > 0) {
-            setStrokes(snapshot.strokes.map((s: any) => ({
-              id: s.id,
-              d: s.d,
-              color: s.color || '#22d3ee',
-              strokeWidth: s.strokeWidth || 4,
-            })));
-          }
-          if (snapshot.stickies && snapshot.stickies.length > 0) {
-            setStickies(snapshot.stickies.map((st: any) => ({
-              id: st.id,
-              x: st.x,
-              y: st.y,
-              zIndex: st.zIndex || 20,
-              title: st.title || 'SMART TUTOR',
-              bodyHtml: st.bodyHtml || '',
-              tip: st.tip,
-            })));
+        const res = await apiRequest<{ title?: string; snapshot?: { cards?: any[]; strokes?: any[]; stickies?: any[] } }>(`/api/rooms/${roomCode}`);
+        if (isMounted && res.ok && res.data) {
+          const title = res.data.title || roomTitle || `Workspace #${roomCode}`;
+          setRoomTitle(title);
+          addSavedRoom(roomCode, title);
+          document.title = `${title} (#${roomCode}) | Orbit Canvas`;
+
+          if (res.data.snapshot) {
+            const snapshot = res.data.snapshot;
+            if (snapshot.cards && snapshot.cards.length > 0) {
+              setCards(snapshot.cards.map((c: any) => ({
+                id: c.id,
+                filename: c.filename || 'snippet.ts',
+                rawText: c.rawText || c.content || '',
+                x: c.x,
+                y: c.y,
+                zIndex: c.zIndex || 20,
+                isExtra: c.id !== 'card-1' && c.id !== 'card1',
+              })));
+            }
+            if (snapshot.strokes && snapshot.strokes.length > 0) {
+              setStrokes(snapshot.strokes.map((s: any) => ({
+                id: s.id,
+                d: s.d,
+                color: s.color || '#22d3ee',
+                strokeWidth: s.strokeWidth || 4,
+              })));
+            }
+            if (snapshot.stickies && snapshot.stickies.length > 0) {
+              setStickies(snapshot.stickies.map((st: any) => ({
+                id: st.id,
+                x: st.x,
+                y: st.y,
+                zIndex: st.zIndex || 20,
+                title: st.title || 'SMART TUTOR',
+                bodyHtml: st.bodyHtml || '',
+                tip: st.tip,
+              })));
+            }
           }
         }
       } catch (_err) {
-        // ignore restore errors
+        addSavedRoom(roomCode, roomTitle || `Workspace #${roomCode}`);
       }
     };
     restoreRoomState();
@@ -783,11 +799,14 @@ export const CanvasPage: React.FC = () => {
 
       <TopBar
         roomCode={roomCode}
+        roomTitle={roomTitle}
         onShare={handleShare}
         onSave={handleManualSave}
         onExport={handleExportPNG}
         users={presenceUsers}
         isLive={socketStatus === 'connected'}
+        savedRooms={savedRooms}
+        onSwitchRoom={(code) => navigate(`/canvas/${code}`)}
       />
 
       {/* Spatial Canvas Container with Mouse-Centered Zoom & Translation */}

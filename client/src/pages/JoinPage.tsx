@@ -110,17 +110,58 @@ export const JoinPage: React.FC = () => {
           />
 
           {savedRooms.length > 0 && (
-            <div style={{ marginTop: '16px', textAlign: 'center' }}>
+            <div style={{ marginTop: '16px' }}>
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.65)',
+                  border: '1px solid var(--accent-border, rgba(56, 189, 248, 0.3))',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  marginBottom: '10px',
+                  textAlign: 'left'
+                }}
+              >
+                <div style={{ overflow: 'hidden' }}>
+                  <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.5px', marginBottom: '2px' }}>
+                    ★ Continue Recent Workspace
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {savedRooms[0].title}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
+                    #{savedRooms[0].code}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => navigate(`/canvas/${savedRooms[0].code}?name=${encodeURIComponent(savedName || 'Nova')}`)}
+                  style={{
+                    padding: '8px 14px',
+                    fontSize: '12.5px',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 0 12px rgba(34, 211, 238, 0.2)'
+                  }}
+                >
+                  Resume →
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={() => navigate('/dashboard')}
                 style={{
-                  background: 'rgba(56, 189, 248, 0.08)',
-                  border: '1px solid rgba(56, 189, 248, 0.25)',
-                  color: 'var(--accent, #38bdf8)',
-                  borderRadius: '10px',
-                  padding: '10px 16px',
-                  fontSize: '13px',
+                  background: 'transparent',
+                  border: '1px solid var(--border)',
+                  color: 'var(--muted)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '8px 16px',
+                  fontSize: '12.5px',
                   fontWeight: 600,
                   cursor: 'pointer',
                   width: '100%',

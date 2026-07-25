@@ -7,6 +7,8 @@ export interface SavedRoom {
   code: string;
   title: string;
   joinedAt: number;
+  createdAt?: number;
+  lastOpenedAt?: number;
   isOwner?: boolean;
   activeCount?: number;
 }
@@ -23,7 +25,14 @@ export function useSavedRooms() {
   const [savedRooms, setSavedRooms] = useState<SavedRoom[]>(() => {
     try {
       const raw = localStorage.getItem(ROOMS_KEY);
-      return raw ? JSON.parse(raw) : [];
+      if (!raw) return [];
+      const parsed: SavedRoom[] = JSON.parse(raw);
+      // Migrate legacy rooms to ensure lastOpenedAt and createdAt are populated
+      return parsed.map(r => ({
+        ...r,
+        createdAt: r.createdAt || r.joinedAt || Date.now(),
+        lastOpenedAt: r.lastOpenedAt || r.joinedAt || Date.now(),
+      })).sort((a, b) => (b.lastOpenedAt || 0) - (a.lastOpenedAt || 0));
     } catch (_e) {
       return [];
     }
@@ -39,22 +48,30 @@ export function useSavedRooms() {
     }
   };
 
-  // Persist rooms with title
-  const addSavedRoom = (code: string, title?: string, isOwner: boolean = false) => {
+  // Persist rooms with title and lastOpenedAt timestamp
+  const addSavedRoom = (code: string, title?: string, isOwner?: boolean) => {
     const uppercaseCode = code.toUpperCase().trim();
-    const roomTitle = (title || `Workspace #${uppercaseCode}`).trim();
+    if (!uppercaseCode) return;
 
     setSavedRooms(prev => {
+      const now = Date.now();
+      const existing = prev.find(r => r.code === uppercaseCode);
       const filtered = prev.filter(r => r.code !== uppercaseCode);
-      const updated: SavedRoom[] = [
-        {
-          code: uppercaseCode,
-          title: roomTitle,
-          joinedAt: Date.now(),
-          isOwner,
-        },
-        ...filtered,
-      ].slice(0, 20); // Keep top 20 most recent saved rooms
+
+      const roomTitle = title && title.trim() ? title.trim() : (existing?.title || `Workspace #${uppercaseCode}`);
+      const roomIsOwner = isOwner !== undefined ? isOwner : (existing?.isOwner ?? false);
+      const createdAt = existing?.createdAt || existing?.joinedAt || now;
+
+      const updatedRoom: SavedRoom = {
+        code: uppercaseCode,
+        title: roomTitle,
+        joinedAt: existing?.joinedAt || now,
+        createdAt,
+        lastOpenedAt: now,
+        isOwner: roomIsOwner,
+      };
+
+      const updated: SavedRoom[] = [updatedRoom, ...filtered].slice(0, 20);
 
       try {
         localStorage.setItem(ROOMS_KEY, JSON.stringify(updated));
@@ -87,6 +104,11 @@ export function useSavedRooms() {
     }
   };
 
+  const getMostRecentRoom = (): SavedRoom | null => {
+    if (savedRooms.length === 0) return null;
+    return savedRooms[0];
+  };
+
   return {
     savedName,
     updateSavedName,
@@ -94,5 +116,6 @@ export function useSavedRooms() {
     addSavedRoom,
     removeSavedRoom,
     clearSavedRooms,
+    getMostRecentRoom,
   };
 }

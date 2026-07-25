@@ -3,24 +3,33 @@ import { useNavigate } from 'react-router-dom';
 
 interface TopBarProps {
   roomCode: string;
+  roomTitle?: string;
   onShare: () => void;
   onSave?: () => void;
   onExport?: () => void;
   users?: { name: string; color: string }[];
   isLive?: boolean;
+  savedRooms?: { code: string; title: string }[];
+  onSwitchRoom?: (code: string) => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
   roomCode,
+  roomTitle = '',
   onShare,
   onSave,
   onExport,
   users = [],
-  isLive = true
+  isLive = true,
+  savedRooms = [],
+  onSwitchRoom
 }) => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const avatarClasses = ['av-a', 'av-b', 'av-c'];
+
+  const displayTitle = roomTitle || `Workspace #${roomCode}`;
 
   return (
     <>
@@ -76,10 +85,89 @@ export const TopBar: React.FC<TopBarProps> = ({
 
         <div className="vr topbar-desktop-nav" />
 
-        <div className="brand">
+        {/* Dynamic Canvas Title Header */}
+        <div 
+          className="brand"
+          style={{ position: 'relative', cursor: savedRooms.length > 1 ? 'pointer' : 'default' }}
+          onClick={() => savedRooms.length > 1 && setSwitcherOpen(prev => !prev)}
+          title={savedRooms.length > 1 ? 'Click to switch recent canvas' : displayTitle}
+        >
           <span className="bd" />
-          orbit
+          <span style={{ 
+            maxWidth: '180px', 
+            whiteSpace: 'nowrap', 
+            overflow: 'hidden', 
+            textOverflow: 'ellipsis',
+            display: 'inline-block',
+            fontWeight: 600
+          }}>
+            {displayTitle}
+          </span>
+          {savedRooms.length > 1 && (
+            <span style={{ fontSize: '10px', opacity: 0.6, marginLeft: '2px' }}>▼</span>
+          )}
+
+          {/* Quick Canvas Switcher Dropdown */}
+          {switcherOpen && savedRooms.length > 1 && (
+            <div 
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                left: 0,
+                background: 'rgba(15, 17, 26, 0.95)',
+                backdropFilter: 'blur(12px)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                padding: '6px',
+                minWidth: '220px',
+                zIndex: 9999,
+                boxShadow: 'var(--shadow-heavy)',
+                animation: 'fadeIn 0.15s ease'
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ padding: '4px 8px 6px', fontSize: '11px', textTransform: 'uppercase', color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.5px' }}>
+                Recent Canvases
+              </div>
+              {savedRooms.map(r => (
+                <button
+                  key={r.code}
+                  type="button"
+                  onClick={() => {
+                    setSwitcherOpen(false);
+                    if (r.code !== roomCode) {
+                      if (onSwitchRoom) onSwitchRoom(r.code);
+                      else navigate(`/canvas/${r.code}`);
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '6px 10px',
+                    background: r.code === roomCode ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
+                    color: r.code === roomCode ? 'var(--accent)' : 'var(--fg)',
+                    border: 'none',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '2px'
+                  }}
+                >
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
+                    {r.title}
+                  </span>
+                  <span style={{ fontSize: '11px', opacity: 0.6, fontFamily: 'var(--font-mono)' }}>
+                    #{r.code}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
         <div className="vr" />
         <div className="roomchip" id="roomchip" data-od-id="room-chip">
           #{roomCode}
@@ -148,7 +236,10 @@ export const TopBar: React.FC<TopBarProps> = ({
             <div className="mobile-drawer-header">
               <div className="brand">
                 <span className="bd" />
-                orbit canvas #{roomCode}
+                <span style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                  {displayTitle}
+                </span>
+                <span style={{ fontSize: '12px', opacity: 0.6, marginLeft: '6px' }}>#{roomCode}</span>
               </div>
               <button className="close" onClick={() => setMobileMenuOpen(false)}>✕</button>
             </div>
