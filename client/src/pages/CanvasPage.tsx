@@ -13,6 +13,7 @@ import { AISticky } from '../components/AISticky';
 import type { StickyData } from '../components/AISticky';
 import { InkLayer } from '../components/InkLayer';
 import type { InkStroke } from '../components/InkLayer';
+import { PenToolbar } from '../components/PenToolbar';
 import { PeerCursor } from '../components/PeerCursor';
 import { Toast } from '../components/Toast';
 import { HintBar } from '../components/HintBar';
@@ -36,25 +37,26 @@ export const CanvasPage: React.FC = () => {
   // Socket Connection Hook
   const { socket, status: socketStatus } = useSocket(roomCode, userName);
 
-  // Real Presence & Cursors Hook (No fake mock users)
+  // Real Presence & Cursors Hook
   const { presenceUsers, remoteCursors, emitCursorMove } = usePresence(socket, roomCode, userName);
 
-  const [mode, setMode] = useState<'idle' | 'pen' | 'lasso'>('idle');
+  const [mode, setMode] = useState<'idle' | 'pen' | 'lasso' | 'eraser'>('idle');
+  const [penColor, setPenColor] = useState<string>('#22d3ee');
+  const [penWidth, setPenWidth] = useState<number>(4);
+
   const [zTop, setZTop] = useState(40);
   const [zoom, setZoom] = useState<number>(1.0);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isSpacePressed, setIsSpacePressed] = useState(false);
 
-  // Cards state
+  // Cards state & Sync Hook
   const [cards, setCards] = useState<CodeCardData[]>([]);
-
-  // Sync Cards Hook
-  const { emitCardMove, emitCardAdd, emitCardUpdate } = useSyncCards(socket, setCards);
+  const { emitCardMove, emitCardAdd, emitCardUpdate, emitCardDelete } = useSyncCards(socket, setCards);
 
   // Ink Strokes state & Sync Hook
   const [strokes, setStrokes] = useState<InkStroke[]>([]);
   const [currentStroke, setCurrentStroke] = useState<string | null>(null);
-  const { emitStrokeAdd, emitClearCanvas } = useSyncInk(socket, setStrokes);
+  const { emitStrokeAdd, emitStrokeDelete, emitClearCanvas } = useSyncInk(socket, setStrokes);
 
   // Stickies state
   const [stickies, setStickies] = useState<StickyData[]>([]);
@@ -75,6 +77,19 @@ export const CanvasPage: React.FC = () => {
     visible: false,
     analyzing: false,
   });
+
+  // Individual deletion handlers
+  const handleDeleteStroke = useCallback((strokeId: string) => {
+    setStrokes(prev => prev.filter(s => s.id !== strokeId));
+    emitStrokeDelete(strokeId);
+    showToast('Erased ink stroke');
+  }, [emitStrokeDelete, showToast]);
+
+  const handleDeleteCard = useCallback((cardId: string) => {
+    setCards(prev => prev.filter(c => c.id !== cardId));
+    emitCardDelete(cardId);
+    showToast('Deleted code card');
+  }, [emitCardDelete, showToast]);
 
   // Spacebar pan key listener
   useEffect(() => {
@@ -116,7 +131,7 @@ export const CanvasPage: React.FC = () => {
   const syncSpatialSnapshot = useCallback(async () => {
     const snapshot = {
       cards: cards.map(c => ({ id: c.id, filename: c.filename, rawText: c.rawText, x: c.x, y: c.y })),
-      strokes: strokes.map(s => ({ id: s.id, d: s.d })),
+      strokes: strokes.map(s => ({ id: s.id, d: s.d, color: s.color, strokeWidth: s.strokeWidth })),
       stickies: stickies.map(st => ({ id: st.id, title: st.title, x: st.x, y: st.y })),
     };
 
@@ -283,6 +298,9 @@ export const CanvasPage: React.FC = () => {
     if (tool === 'pen') {
       setMode('pen');
       showToast('Pen armed — drag to draw. Esc to stop.');
+    } else if (tool === 'eraser') {
+      setMode('eraser');
+      showToast('Eraser armed — click ink or cards to delete. Esc to stop.');
     } else if (tool === 'lasso') {
       setMode('lasso');
       showToast('Lasso armed — drag a box around drawings or code.');
@@ -361,7 +379,7 @@ export const CanvasPage: React.FC = () => {
     }
 
     if (e.button !== 0) return;
-    if ((e.target as HTMLElement).closest('button, input, textarea, .topbar, #radial, .code-card, .sticky, .zoom-controls')) return;
+    if ((e.target as HTMLElement).closest('button, input, textarea, .topbar, #radial, .code-card, .sticky, .zoom-controls, .pen-toolbar')) return;
 
     const startX = (e.clientX - pan.x) / zoom;
     const startY = (e.clientY - pan.y) / zoom;
@@ -383,7 +401,12 @@ export const CanvasPage: React.FC = () => {
         window.removeEventListener('pointerup', handleUp);
         window.removeEventListener('pointercancel', handleUp);
 
-        const newStroke: InkStroke = { id: `stroke-${Date.now()}`, d };
+        const newStroke: InkStroke = {
+          id: `stroke-${Date.now()}`,
+          d,
+          color: penColor,
+          strokeWidth: penWidth,
+        };
         setStrokes(prev => [...prev, newStroke]);
         emitStrokeAdd(newStroke);
         setCurrentStroke(null);
@@ -568,7 +591,14 @@ export const CanvasPage: React.FC = () => {
           pointerEvents: 'auto',
         }}
       >
-        <InkLayer strokes={strokes} currentStrokeD={currentStroke || undefined} />
+        <InkLayer
+          strokes={strokes}
+          currentStrokeD={currentStroke || undefined}
+          currentColor={penColor}
+          currentWidth={penWidth}
+          mode={mode}
+          onDeleteStroke={handleDeleteStroke}
+        />
 
         {cards.map(card => (
           <CodeCard
@@ -577,7 +607,11 @@ export const CanvasPage: React.FC = () => {
             onGrab={bringToFront}
             onMove={updateCardPosition}
             onCodeChange={updateCardText}
+            onDelete={handleDeleteCard}
             onToast={showToast}
+            zoom={zoom}
+            pan={pan}
+            mode={mode}
           />
         ))}
 
@@ -588,6 +622,8 @@ export const CanvasPage: React.FC = () => {
             onDismiss={dismissSticky}
             onGrab={bringToFront}
             onMove={updateStickyPosition}
+            zoom={zoom}
+            pan={pan}
           />
         ))}
 
@@ -605,6 +641,16 @@ export const CanvasPage: React.FC = () => {
           <PeerCursor key={peer.id} peer={peer} />
         ))}
       </div>
+
+      {mode === 'pen' && (
+        <PenToolbar
+          color={penColor}
+          width={penWidth}
+          onColorChange={setPenColor}
+          onWidthChange={setPenWidth}
+          onClose={() => setMode('idle')}
+        />
+      )}
 
       <ZoomControls
         zoom={zoom}

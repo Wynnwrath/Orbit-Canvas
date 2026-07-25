@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 interface HintBarProps {
-  mode: 'idle' | 'pen' | 'lasso';
+  mode: 'idle' | 'pen' | 'lasso' | 'eraser';
 }
 
 export const HintBar: React.FC<HintBarProps> = ({ mode }) => {
@@ -19,9 +19,10 @@ export const HintBar: React.FC<HintBarProps> = ({ mode }) => {
   }, [mode]);
 
   const getHintText = () => {
-    if (mode === 'pen') return 'Pen armed — drag to draw. Esc to stop.';
+    if (mode === 'pen') return 'Pen armed — select color/size, drag to draw. Esc to stop.';
+    if (mode === 'eraser') return 'Eraser mode active — click or drag over ink/cards to delete. Esc to stop.';
     if (mode === 'lasso') return 'Lasso armed — drag a box around content.';
-    return 'Right-click anywhere for tools · Drag cards by their header · Esc exits a tool';
+    return 'Right-click anywhere for tools · Drag cards by header · Esc exits a tool';
   };
 
   return (

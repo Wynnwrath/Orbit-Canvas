@@ -15,9 +15,18 @@ interface AIStickyProps {
   onDismiss: (id: string) => void;
   onGrab: (id: string) => void;
   onMove: (id: string, x: number, y: number) => void;
+  zoom?: number;
+  pan?: { x: number; y: number };
 }
 
-export const AISticky: React.FC<AIStickyProps> = ({ sticky, onDismiss, onGrab, onMove }) => {
+export const AISticky: React.FC<AIStickyProps> = ({
+  sticky,
+  onDismiss,
+  onGrab,
+  onMove,
+  zoom = 1,
+  pan = { x: 0, y: 0 },
+}) => {
   const stickyRef = useRef<HTMLDivElement>(null);
 
   const handlePointerDownHeader = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -29,13 +38,17 @@ export const AISticky: React.FC<AIStickyProps> = ({ sticky, onDismiss, onGrab, o
     const targetElem = e.currentTarget;
     const pointerId = e.pointerId;
 
-    const rect = stickyRef.current.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
+    const startCanvasX = (e.clientX - pan.x) / zoom;
+    const startCanvasY = (e.clientY - pan.y) / zoom;
+    const offsetX = startCanvasX - sticky.x;
+    const offsetY = startCanvasY - sticky.y;
 
     const handlePointerMove = (ev: PointerEvent) => {
-      const newX = ev.clientX - offsetX;
-      const newY = ev.clientY - offsetY;
+      const curCanvasX = (ev.clientX - pan.x) / zoom;
+      const curCanvasY = (ev.clientY - pan.y) / zoom;
+      const newX = curCanvasX - offsetX;
+      const newY = curCanvasY - offsetY;
+
       if (stickyRef.current) {
         stickyRef.current.style.left = `${newX}px`;
         stickyRef.current.style.top = `${newY}px`;

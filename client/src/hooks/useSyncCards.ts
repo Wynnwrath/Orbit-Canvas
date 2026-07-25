@@ -42,14 +42,20 @@ export function useSyncCards(
       });
     };
 
+    const handleCardDeleted = (data: { cardId: string }) => {
+      setCards(prev => prev.filter(c => c.id !== data.cardId));
+    };
+
     socket.on('card-moved', handleCardMoved);
     socket.on('card-updated', handleCardUpdated);
     socket.on('card-new', handleCardNew);
+    socket.on('card-deleted', handleCardDeleted);
 
     return () => {
       socket.off('card-moved', handleCardMoved);
       socket.off('card-updated', handleCardUpdated);
       socket.off('card-new', handleCardNew);
+      socket.off('card-deleted', handleCardDeleted);
     };
   }, [socket, setCards]);
 
@@ -78,9 +84,15 @@ export function useSyncCards(
     socket.emit('card-update', { cardId, content });
   };
 
+  const emitCardDelete = (cardId: string) => {
+    if (!socket || !socket.connected) return;
+    socket.emit('card-delete', { cardId });
+  };
+
   return {
     emitCardMove,
     emitCardAdd,
     emitCardUpdate,
+    emitCardDelete,
   };
 }

@@ -123,6 +123,22 @@ class RoomStore {
     return this.cardsByRoom.get(roomCode.toUpperCase()) || [];
   }
 
+  removeStroke(roomCode: string, strokeId: string) {
+    const code = roomCode.toUpperCase();
+    const strokes = this.strokesByRoom.get(code);
+    if (strokes) {
+      this.strokesByRoom.set(code, strokes.filter(s => s.strokeId !== strokeId));
+    }
+  }
+
+  removeCard(roomCode: string, cardId: string) {
+    const code = roomCode.toUpperCase();
+    const cards = this.cardsByRoom.get(code);
+    if (cards) {
+      this.cardsByRoom.set(code, cards.filter(c => c.cardId !== cardId));
+    }
+  }
+
   clearRoom(roomCode: string) {
     const code = roomCode.toUpperCase();
     this.strokesByRoom.set(code, []);

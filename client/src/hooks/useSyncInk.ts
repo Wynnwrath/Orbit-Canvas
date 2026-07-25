@@ -34,17 +34,23 @@ export function useSyncInk(
       ]);
     };
 
+    const handleStrokeDeleted = (data: { strokeId: string }) => {
+      setStrokes(prev => prev.filter(s => s.id !== data.strokeId));
+    };
+
     const handleCanvasCleared = () => {
       setStrokes([]);
     };
 
     socket.on('room-state', handleRoomState);
     socket.on('stroke-new', handleStrokeNew);
+    socket.on('stroke-deleted', handleStrokeDeleted);
     socket.on('canvas-cleared', handleCanvasCleared);
 
     return () => {
       socket.off('room-state', handleRoomState);
       socket.off('stroke-new', handleStrokeNew);
+      socket.off('stroke-deleted', handleStrokeDeleted);
       socket.off('canvas-cleared', handleCanvasCleared);
     };
   }, [socket, setStrokes]);
@@ -59,6 +65,11 @@ export function useSyncInk(
     });
   };
 
+  const emitStrokeDelete = (strokeId: string) => {
+    if (!socket || !socket.connected) return;
+    socket.emit('stroke-delete', { strokeId });
+  };
+
   const emitClearCanvas = () => {
     if (!socket || !socket.connected) return;
     socket.emit('canvas-clear');
@@ -66,6 +77,7 @@ export function useSyncInk(
 
   return {
     emitStrokeAdd,
+    emitStrokeDelete,
     emitClearCanvas,
   };
 }

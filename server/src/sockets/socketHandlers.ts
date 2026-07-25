@@ -176,6 +176,38 @@ export function setupSocketHandlers(io: Server) {
       });
     });
 
+    // Individual stroke deletion
+    socket.on('stroke-delete', async (data: { strokeId: string }) => {
+      const user = roomStore.getUser(socket.id);
+      if (!user) return;
+
+      roomStore.removeStroke(user.roomCode, data.strokeId);
+
+      try {
+        await Stroke.deleteOne({ strokeId: data.strokeId, roomCode: user.roomCode });
+      } catch (_err) {
+        // ignore DB error
+      }
+
+      io.in(user.roomCode).emit('stroke-deleted', { strokeId: data.strokeId });
+    });
+
+    // Individual card deletion
+    socket.on('card-delete', async (data: { cardId: string }) => {
+      const user = roomStore.getUser(socket.id);
+      if (!user) return;
+
+      roomStore.removeCard(user.roomCode, data.cardId);
+
+      try {
+        await Card.deleteOne({ cardId: data.cardId, roomCode: user.roomCode });
+      } catch (_err) {
+        // ignore DB error
+      }
+
+      io.in(user.roomCode).emit('card-deleted', { cardId: data.cardId });
+    });
+
     // Canvas clear
     socket.on('canvas-clear', async () => {
       const user = roomStore.getUser(socket.id);

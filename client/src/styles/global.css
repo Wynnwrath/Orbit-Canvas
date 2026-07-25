@@ -822,3 +822,159 @@ pre {
   border-top-color: var(--accent);
   animation: rot 0.7s linear infinite;
 }
+
+/* ---------- Eraser & Delete Mode ---------- */
+body[data-mode="eraser"] {
+  cursor: cell;
+}
+
+.ink-stroke-eraser-target {
+  transition: stroke 0.12s, stroke-width 0.12s;
+}
+
+.ink-stroke-eraser-target:hover {
+  stroke: #f43f5e !important;
+  stroke-width: 6px !important;
+  filter: drop-shadow(0 0 6px rgba(244, 63, 94, 0.8));
+}
+
+.code-card.eraser-hover-target:hover {
+  outline: 2px solid #f43f5e;
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.35);
+}
+
+.card-delete-btn {
+  background: transparent;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: rgba(244, 63, 94, 0.75);
+  border-radius: 7px;
+  padding: 4px 7px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.15s;
+}
+
+.card-delete-btn:hover {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: #f43f5e;
+  color: #f43f5e;
+}
+
+/* ---------- Pen Toolbar Floating Controls ---------- */
+.pen-toolbar {
+  position: fixed;
+  bottom: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: rgba(18, 18, 22, 0.88);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-topbar);
+  z-index: 65;
+  animation: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pen-toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pen-toolbar-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.color-swatches {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.color-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+  padding: 0;
+}
+
+.color-swatch:hover {
+  transform: scale(1.18);
+}
+
+.color-swatch.active {
+  border-color: #ffffff;
+  box-shadow: 0 0 10px currentColor;
+  transform: scale(1.25);
+}
+
+.pen-toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+}
+
+.size-pickers {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.size-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  padding: 0;
+}
+
+.size-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.size-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.size-dot {
+  border-radius: 50%;
+  display: block;
+}
+
+.pen-close-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: color 0.12s;
+}
+
+.pen-close-btn:hover {
+  color: var(--fg);
+}
+
