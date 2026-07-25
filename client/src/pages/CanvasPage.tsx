@@ -309,21 +309,39 @@ export const CanvasPage: React.FC = () => {
   }, [roomCode, cards, strokes, stickies]);
 
   // Canvas Image Snapshot helper to upload real room thumbnail
+  // Uses an offscreen DOM clone so we never mutate the live zoom/pan state.
   const saveCanvasPreview = useCallback(async () => {
     if (!viewportRef.current) return;
     try {
-      // Save current user view state
-      const prevZoom = zoom;
-      const prevPan = { ...pan };
+      // Deep-clone the viewport and render it offscreen with canonical transform
+      const clone = viewportRef.current.cloneNode(true) as HTMLElement;
+      clone.style.transform = 'translate(0px, 0px) scale(1)';
+      clone.style.transformOrigin = '0 0';
+      clone.style.width = '100vw';
+      clone.style.height = '100vh';
+      clone.style.position = 'absolute';
+      clone.style.top = '0';
+      clone.style.left = '0';
+      clone.style.pointerEvents = 'none';
 
-      // Reset to canonical view for clean capture
-      setZoom(1);
-      setPan({ x: 0, y: 0 });
+      // Wrap in an offscreen container so html2canvas can measure it
+      const offscreen = document.createElement('div');
+      offscreen.style.position = 'fixed';
+      offscreen.style.top = '0';
+      offscreen.style.left = '0';
+      offscreen.style.width = '100vw';
+      offscreen.style.height = '100vh';
+      offscreen.style.overflow = 'hidden';
+      offscreen.style.zIndex = '-9999';
+      offscreen.style.opacity = '0';
+      offscreen.style.pointerEvents = 'none';
+      offscreen.appendChild(clone);
+      document.body.appendChild(offscreen);
 
-      // Wait two frames for DOM transform update
-      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      // Wait one frame for layout
+      await new Promise(r => requestAnimationFrame(r));
 
-      const canvas = await html2canvas(viewportRef.current, {
+      const canvas = await html2canvas(clone, {
         backgroundColor: '#09090b',
         useCORS: true,
         logging: false,
@@ -344,9 +362,8 @@ export const CanvasPage: React.FC = () => {
         },
       });
 
-      // Restore previous user view
-      setZoom(prevZoom);
-      setPan(prevPan);
+      // Remove offscreen container
+      document.body.removeChild(offscreen);
 
       if (canvas) {
         const previewUrl = canvas.toDataURL('image/jpeg', 0.5);
@@ -356,9 +373,11 @@ export const CanvasPage: React.FC = () => {
         });
       }
     } catch (_err) {
-      // ignore preview errors
+      // ignore preview errors — also clean up offscreen node if still present
+      const zombie = document.querySelector('div[style*="z-index: -9999"]');
+      if (zombie) zombie.remove();
     }
-  }, [roomCode, zoom, pan]);
+  }, [roomCode]);
 
   // Manual save handler
   const handleManualSave = async () => {
