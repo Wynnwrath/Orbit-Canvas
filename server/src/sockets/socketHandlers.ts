@@ -44,7 +44,45 @@ export function setupSocketHandlers(io: Server) {
       // Send initial room state to joining client
       const roomUsers = roomStore.getRoomUsers(roomCode);
       const roomStrokes = roomStore.getStrokes(roomCode);
-      const roomCards = roomStore.getCards(roomCode);
+      let roomCards = roomStore.getCards(roomCode);
+
+      if (roomCards.length === 0) {
+        try {
+          const dbCards = await Card.find({ roomCode });
+          if (dbCards && dbCards.length > 0) {
+            const mappedCards = dbCards.map(c => ({
+              cardId: c.cardId,
+              roomCode: c.roomCode,
+              userId: c.userId,
+              type: c.type,
+              filename: c.filename,
+              content: c.content,
+              position: c.position,
+              zIndex: c.zIndex,
+            }));
+            mappedCards.forEach(c => roomStore.addCard(c));
+            roomCards = roomStore.getCards(roomCode);
+          } else {
+            const roomDoc = await Room.findOne({ code: roomCode });
+            if (roomDoc?.snapshot?.cards && roomDoc.snapshot.cards.length > 0) {
+              const mappedCards = roomDoc.snapshot.cards.map(c => ({
+                cardId: c.id,
+                roomCode,
+                userId: 'cloud-save',
+                type: 'code' as const,
+                filename: c.filename,
+                content: c.rawText || c.content || '',
+                position: { x: c.x, y: c.y },
+                zIndex: c.zIndex || 20,
+              }));
+              mappedCards.forEach(c => roomStore.addCard(c));
+              roomCards = roomStore.getCards(roomCode);
+            }
+          }
+        } catch (_err) {
+          // ignore
+        }
+      }
 
       socket.emit('room-state', {
         roomCode,

@@ -128,12 +128,18 @@ export const CodeCard: React.FC<CodeCardProps> = ({
   const handleKeyDownTextarea = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       setIsEditing(false);
+      onToast('Code card saved to cloud');
     }
   };
 
   const toggleEditing = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    setIsEditing(prev => !prev);
+    if (isEditing) {
+      setIsEditing(false);
+      onToast('Code card saved to cloud');
+    } else {
+      setIsEditing(true);
+    }
   };
 
   const handleDeleteCard = (e: React.MouseEvent) => {
@@ -170,6 +176,27 @@ export const CodeCard: React.FC<CodeCardProps> = ({
           <i className="dg" />
         </div>
         <span className="fname">{card.filename}</span>
+        <span
+          title="Synced & saved to cloud"
+          style={{
+            fontSize: '10px',
+            color: 'var(--muted)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '3px',
+            background: 'rgba(255,255,255,0.04)',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            border: '1px solid rgba(255,255,255,0.06)',
+            lineHeight: 1,
+            marginLeft: '4px',
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+          </svg>
+          Cloud Saved
+        </span>
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>
           <button

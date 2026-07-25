@@ -136,12 +136,61 @@ export const CanvasPage: React.FC = () => {
     };
   }, [mode]);
 
+  // Restore spatial room snapshot from Cloud on mount
+  useEffect(() => {
+    let isMounted = true;
+    const restoreRoomState = async () => {
+      try {
+        const res = await apiRequest<{ snapshot?: { cards?: any[]; strokes?: any[]; stickies?: any[] } }>(`/api/rooms/${roomCode}`);
+        if (isMounted && res.ok && res.data?.snapshot) {
+          const snapshot = res.data.snapshot;
+          if (snapshot.cards && snapshot.cards.length > 0) {
+            setCards(snapshot.cards.map((c: any) => ({
+              id: c.id,
+              filename: c.filename || 'snippet.ts',
+              rawText: c.rawText || c.content || '',
+              x: c.x,
+              y: c.y,
+              zIndex: c.zIndex || 20,
+              isExtra: c.id !== 'card-1' && c.id !== 'card1',
+            })));
+          }
+          if (snapshot.strokes && snapshot.strokes.length > 0) {
+            setStrokes(snapshot.strokes.map((s: any) => ({
+              id: s.id,
+              d: s.d,
+              color: s.color || '#22d3ee',
+              strokeWidth: s.strokeWidth || 4,
+            })));
+          }
+          if (snapshot.stickies && snapshot.stickies.length > 0) {
+            setStickies(snapshot.stickies.map((st: any) => ({
+              id: st.id,
+              x: st.x,
+              y: st.y,
+              zIndex: st.zIndex || 20,
+              title: st.title || 'SMART TUTOR',
+              bodyHtml: st.bodyHtml || '',
+              tip: st.tip,
+            })));
+          }
+        }
+      } catch (_err) {
+        // ignore restore errors
+      }
+    };
+    restoreRoomState();
+    return () => {
+      isMounted = false;
+    };
+  }, [roomCode]);
+
   // Spatial Element Snapshot Sync helper
   const syncSpatialSnapshot = useCallback(async () => {
     const snapshot = {
-      cards: cards.map(c => ({ id: c.id, filename: c.filename, rawText: c.rawText, x: c.x, y: c.y })),
+      cards: cards.map(c => ({ id: c.id, filename: c.filename, rawText: c.rawText, x: c.x, y: c.y, zIndex: c.zIndex })),
       strokes: strokes.map(s => ({ id: s.id, d: s.d, color: s.color, strokeWidth: s.strokeWidth })),
-      stickies: stickies.map(st => ({ id: st.id, title: st.title, x: st.x, y: st.y })),
+      stickies: stickies.map(st => ({ id: st.id, title: st.title, bodyHtml: st.bodyHtml, tip: st.tip, x: st.x, y: st.y, zIndex: st.zIndex })),
     };
 
     await apiRequest(`/api/rooms/${roomCode}/snapshot`, {

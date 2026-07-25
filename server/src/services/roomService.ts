@@ -1,4 +1,6 @@
 import { Room, IRoom, IRoomUser, IRoomSnapshot } from '../models/Room.js';
+import { Card } from '../models/Card.js';
+import { roomStore } from '../sockets/roomStore.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
 // In-memory cache/store for zero-dependency local runs
@@ -148,13 +150,15 @@ export async function updateRoomPreview(code: string, previewUrl: string): Promi
 
 export async function updateRoomSnapshot(code: string, snapshot: IRoomSnapshot): Promise<boolean> {
   const formattedCode = code.toUpperCase().trim();
+  let updated = false;
+
   try {
     const room = await Room.findOne({ code: formattedCode });
     if (room) {
       room.snapshot = snapshot;
       room.lastActive = new Date();
       await room.save();
-      return true;
+      updated = true;
     }
   } catch (_err) {
     // ignore
@@ -164,9 +168,36 @@ export async function updateRoomSnapshot(code: string, snapshot: IRoomSnapshot):
     const mem = inMemoryRooms.get(formattedCode)!;
     mem.snapshot = snapshot;
     mem.lastActive = new Date();
-    return true;
+    updated = true;
   }
-  return false;
+
+  if (snapshot?.cards) {
+    const inMemCards = snapshot.cards.map(c => ({
+      cardId: c.id,
+      roomCode: formattedCode,
+      userId: 'cloud-save',
+      type: 'code' as const,
+      filename: c.filename,
+      content: c.rawText || c.content || '',
+      position: { x: c.x, y: c.y },
+      zIndex: c.zIndex || 20,
+    }));
+    roomStore.setCards(formattedCode, inMemCards);
+
+    try {
+      for (const card of inMemCards) {
+        await Card.updateOne(
+          { cardId: card.cardId, roomCode: formattedCode },
+          { ...card },
+          { upsert: true }
+        );
+      }
+    } catch (_dbErr) {
+      // ignore
+    }
+  }
+
+  return updated;
 }
 
 export async function getRoomInfo(code: string): Promise<{ code: string; title: string; previewUrl?: string; snapshot?: IRoomSnapshot; users: IRoomUser[]; activeCount: number }> {

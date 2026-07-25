@@ -11,6 +11,20 @@ export function useSyncCards(
   useEffect(() => {
     if (!socket) return;
 
+    const handleRoomState = (data: { cards?: any[] }) => {
+      if (data?.cards && data.cards.length > 0) {
+        setCards(data.cards.map(c => ({
+          id: c.cardId || c.id,
+          filename: c.filename || 'snippet.ts',
+          rawText: c.content || c.rawText || '',
+          x: c.position?.x ?? c.x ?? 100,
+          y: c.position?.y ?? c.y ?? 100,
+          zIndex: c.zIndex || 20,
+          isExtra: c.cardId !== 'card1' && c.id !== 'card1',
+        })));
+      }
+    };
+
     const handleCardMoved = (data: { cardId: string; x: number; y: number }) => {
       setCards(prev =>
         prev.map(c => (c.id === data.cardId ? { ...c, x: data.x, y: data.y } : c))
@@ -25,16 +39,16 @@ export function useSyncCards(
 
     const handleCardNew = (cardObj: any) => {
       setCards(prev => {
-        if (prev.some(c => c.id === cardObj.cardId)) return prev;
+        if (prev.some(c => c.id === cardObj.cardId || c.id === cardObj.id)) return prev;
         return [
           ...prev,
           {
-            id: cardObj.cardId,
-            filename: cardObj.filename || 'card.ts',
-            codeHtml: cardObj.content,
-            rawText: cardObj.content,
-            x: cardObj.position?.x || 100,
-            y: cardObj.position?.y || 100,
+            id: cardObj.cardId || cardObj.id,
+            filename: cardObj.filename || 'snippet.ts',
+            codeHtml: cardObj.content || cardObj.rawText,
+            rawText: cardObj.content || cardObj.rawText || '',
+            x: cardObj.position?.x ?? cardObj.x ?? 100,
+            y: cardObj.position?.y ?? cardObj.y ?? 100,
             zIndex: cardObj.zIndex || 20,
             isExtra: true,
           },
@@ -46,12 +60,14 @@ export function useSyncCards(
       setCards(prev => prev.filter(c => c.id !== data.cardId));
     };
 
+    socket.on('room-state', handleRoomState);
     socket.on('card-moved', handleCardMoved);
     socket.on('card-updated', handleCardUpdated);
     socket.on('card-new', handleCardNew);
     socket.on('card-deleted', handleCardDeleted);
 
     return () => {
+      socket.off('room-state', handleRoomState);
       socket.off('card-moved', handleCardMoved);
       socket.off('card-updated', handleCardUpdated);
       socket.off('card-new', handleCardNew);

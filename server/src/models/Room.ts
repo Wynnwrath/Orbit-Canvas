@@ -8,9 +8,9 @@ export interface IRoomUser {
 }
 
 export interface IRoomSnapshot {
-  cards?: Array<{ id: string; filename: string; rawText: string; x: number; y: number }>;
-  strokes?: Array<{ id: string; d: string }>;
-  stickies?: Array<{ id: string; title: string; x: number; y: number }>;
+  cards?: Array<{ id: string; filename: string; rawText: string; content?: string; x: number; y: number; zIndex?: number }>;
+  strokes?: Array<{ id: string; d: string; color?: string; strokeWidth?: number }>;
+  stickies?: Array<{ id: string; title: string; bodyHtml?: string; tip?: string; x: number; y: number; zIndex?: number }>;
 }
 
 export interface IRoom extends Document {

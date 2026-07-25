@@ -144,6 +144,14 @@ class RoomStore {
     this.strokesByRoom.set(code, []);
     this.cardsByRoom.set(code, []);
   }
+
+  setCards(roomCode: string, cards: InMemoryCard[]) {
+    this.cardsByRoom.set(roomCode.toUpperCase(), cards);
+  }
+
+  setStrokes(roomCode: string, strokes: InMemoryStroke[]) {
+    this.strokesByRoom.set(roomCode.toUpperCase(), strokes);
+  }
 }
 
 function windowWidthPercent(pct: number): number {
