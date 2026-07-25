@@ -640,14 +640,25 @@ export const CanvasPage: React.FC = () => {
       closeRadial();
     }
 
-    // Palm Rejection: Ignore large contact area touches (>25px)
-    if (e.pointerType === 'touch' && (e.width > 25 || e.height > 25)) {
+    // Palm Rejection: Ignore massive resting palm contacts (>150px)
+    if (e.pointerType === 'touch' && (e.width > 150 || e.height > 150)) {
       return;
     }
 
     // Track active touch pointer
     if (e.pointerType === 'touch') {
       activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      // Always register pointer cleanup on finger lift
+      const handleGlobalPointerUp = (upEv: PointerEvent) => {
+        if (upEv.pointerId === e.pointerId) {
+          activePointersRef.current.delete(upEv.pointerId);
+          window.removeEventListener('pointerup', handleGlobalPointerUp);
+          window.removeEventListener('pointercancel', handleGlobalPointerUp);
+        }
+      };
+      window.addEventListener('pointerup', handleGlobalPointerUp);
+      window.addEventListener('pointercancel', handleGlobalPointerUp);
 
       // Long-press timer for radial menu on single touch
       if (activePointersRef.current.size === 1) {
@@ -658,7 +669,7 @@ export const CanvasPage: React.FC = () => {
           const cX = (e.clientX - pan.x) / zoom;
           const cY = (e.clientY - pan.y) / zoom;
           setRadialState({ open: true, screenX: e.clientX, screenY: e.clientY, canvasX: cX, canvasY: cY });
-        }, 350);
+        }, 450);
       } else if (activePointersRef.current.size >= 2) {
         // Clear long-press timer & single touch pan listener when multi-touch pinch starts
         if (longPressTimerRef.current) {
@@ -788,7 +799,7 @@ export const CanvasPage: React.FC = () => {
       return;
     }
 
-    if (e.button !== 0) return;
+    if (e.pointerType !== 'touch' && e.button !== 0) return;
     if ((e.target as HTMLElement).closest('button, input, textarea, .topbar, #radial, .code-card, .sticky, .zoom-controls, .pen-toolbar')) return;
 
     const startX = (e.clientX - pan.x) / zoom;
