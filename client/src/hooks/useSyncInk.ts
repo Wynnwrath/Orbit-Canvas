@@ -1,10 +1,14 @@
 import { useEffect } from 'react';
 import { Socket } from 'socket.io-client';
 import type { InkStroke } from '../components/InkLayer';
+import type { CodeCardData } from '../components/CodeCard';
+import type { StickyData } from '../components/AISticky';
 
 export function useSyncInk(
   socket: Socket | null,
-  setStrokes: React.Dispatch<React.SetStateAction<InkStroke[]>>
+  setStrokes: React.Dispatch<React.SetStateAction<InkStroke[]>>,
+  setCards: React.Dispatch<React.SetStateAction<CodeCardData[]>>,
+  setStickies: React.Dispatch<React.SetStateAction<StickyData[]>>,
 ) {
   useEffect(() => {
     if (!socket) return;
@@ -12,7 +16,7 @@ export function useSyncInk(
     const handleRoomState = (data: { strokes: any[] }) => {
       if (data?.strokes && data.strokes.length > 0) {
         setStrokes(
-          data.strokes.map(s => ({
+          data.strokes.map((s: any) => ({
             id: s.strokeId,
             d: s.pathData,
             color: s.color,
@@ -40,6 +44,8 @@ export function useSyncInk(
 
     const handleCanvasCleared = () => {
       setStrokes([]);
+      setCards([]);
+      setStickies([]);
     };
 
     socket.on('room-state', handleRoomState);
@@ -53,7 +59,7 @@ export function useSyncInk(
       socket.off('stroke-deleted', handleStrokeDeleted);
       socket.off('canvas-cleared', handleCanvasCleared);
     };
-  }, [socket, setStrokes]);
+  }, [socket, setStrokes, setCards, setStickies]);
 
   const emitStrokeAdd = (stroke: InkStroke) => {
     if (!socket || !socket.connected) return;

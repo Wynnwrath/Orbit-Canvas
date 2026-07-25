@@ -7,13 +7,14 @@ export function useSyncCards(
   setCards: React.Dispatch<React.SetStateAction<CodeCardData[]>>
 ) {
   const moveThrottleRef = useRef<number>(0);
+  const lastSentMoveRef = useRef<{ cardId: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!socket) return;
 
     const handleRoomState = (data: { cards?: any[] }) => {
       if (data?.cards && data.cards.length > 0) {
-        setCards(data.cards.map(c => ({
+        setCards(data.cards.map((c: any) => ({
           id: c.cardId || c.id,
           filename: c.filename || 'snippet.ts',
           rawText: c.content || c.rawText || '',
@@ -80,6 +81,7 @@ export function useSyncCards(
     const now = performance.now();
     if (now - moveThrottleRef.current > 33) {
       moveThrottleRef.current = now;
+      lastSentMoveRef.current = { cardId, x, y };
       socket.emit('card-move', { cardId, x, y });
     }
   };
@@ -105,10 +107,20 @@ export function useSyncCards(
     socket.emit('card-delete', { cardId });
   };
 
+  const flushCardMove = () => {
+    if (!socket || !socket.connected) return;
+    const pending = lastSentMoveRef.current;
+    if (pending) {
+      socket.emit('card-move', pending);
+      lastSentMoveRef.current = null;
+    }
+  };
+
   return {
     emitCardMove,
     emitCardAdd,
     emitCardUpdate,
     emitCardDelete,
+    flushCardMove,
   };
 }

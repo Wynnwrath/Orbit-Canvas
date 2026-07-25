@@ -4,8 +4,26 @@ import { Stroke } from '../models/Stroke.js';
 import { Card } from '../models/Card.js';
 import { Room } from '../models/Room.js';
 
+const RATE_LIMIT_MS = 16; // ~60 messages/sec max per socket
+
+function createRateLimiter() {
+  const lastEmit = new Map<string, number>();
+
+  return (socketId: string): boolean => {
+    const now = Date.now();
+    const last = lastEmit.get(socketId) || 0;
+    if (now - last < RATE_LIMIT_MS) return false;
+    lastEmit.set(socketId, now);
+    return true;
+  };
+}
+
 export function setupSocketHandlers(io: Server) {
+  const rateLimit = createRateLimiter();
+
   io.on('connection', (socket: Socket) => {
+    // Clean up stale entries from previous connections with same socketId
+    const ghostUser = roomStore.removeUser(socket.id);
 
     socket.on('join-room', async (data: { roomCode: string; name: string; userId?: string }) => {
       const roomCode = (data.roomCode || '8F2A').toUpperCase();
@@ -30,7 +48,6 @@ export function setupSocketHandlers(io: Server) {
 
       roomStore.addUser(activeUser);
 
-      // Persist in DB if available
       try {
         await Room.updateOne(
           { code: roomCode },
@@ -41,7 +58,6 @@ export function setupSocketHandlers(io: Server) {
         // ignore fallback
       }
 
-      // Send initial room state to joining client
       const roomUsers = roomStore.getRoomUsers(roomCode);
       const roomStrokes = roomStore.getStrokes(roomCode);
       let roomCards = roomStore.getCards(roomCode);
@@ -65,7 +81,7 @@ export function setupSocketHandlers(io: Server) {
           } else {
             const roomDoc = await Room.findOne({ code: roomCode });
             if (roomDoc?.snapshot?.cards && roomDoc.snapshot.cards.length > 0) {
-              const mappedCards = roomDoc.snapshot.cards.map(c => ({
+              const mappedCards = roomDoc.snapshot.cards.map((c: any) => ({
                 cardId: c.id,
                 roomCode,
                 userId: 'cloud-save',
@@ -91,7 +107,6 @@ export function setupSocketHandlers(io: Server) {
         cards: roomCards,
       });
 
-      // Broadcast user-joined to peers in the room
       socket.to(roomCode).emit('user-joined', {
         socketId: socket.id,
         userId,
@@ -102,6 +117,7 @@ export function setupSocketHandlers(io: Server) {
 
     // Cursor movement broadcasting
     socket.on('cursor-move', (pos: { x: number; y: number }) => {
+      if (!rateLimit(socket.id)) return;
       const user = roomStore.getUser(socket.id);
       if (!user) return;
 
@@ -227,7 +243,7 @@ export function setupSocketHandlers(io: Server) {
         // ignore DB error
       }
 
-      io.in(user.roomCode).emit('stroke-deleted', { strokeId: data.strokeId });
+      socket.to(user.roomCode).emit('stroke-deleted', { strokeId: data.strokeId });
     });
 
     // Individual card deletion
@@ -243,7 +259,31 @@ export function setupSocketHandlers(io: Server) {
         // ignore DB error
       }
 
-      io.in(user.roomCode).emit('card-deleted', { cardId: data.cardId });
+      socket.to(user.roomCode).emit('card-deleted', { cardId: data.cardId });
+    });
+
+    // Sticky add
+    socket.on('sticky-add', async (data: { stickyId: string; x: number; y: number; zIndex: number; title: string; bodyHtml: string; tip?: string }) => {
+      const user = roomStore.getUser(socket.id);
+      if (!user) return;
+
+      socket.to(user.roomCode).emit('sticky-new', data);
+    });
+
+    // Sticky delete
+    socket.on('sticky-delete', async (data: { stickyId: string }) => {
+      const user = roomStore.getUser(socket.id);
+      if (!user) return;
+
+      socket.to(user.roomCode).emit('sticky-deleted', { stickyId: data.stickyId });
+    });
+
+    // Sticky move
+    socket.on('sticky-move', async (data: { stickyId: string; x: number; y: number }) => {
+      const user = roomStore.getUser(socket.id);
+      if (!user) return;
+
+      socket.to(user.roomCode).emit('sticky-moved', data);
     });
 
     // Canvas clear
@@ -260,7 +300,7 @@ export function setupSocketHandlers(io: Server) {
         // ignore
       }
 
-      io.in(user.roomCode).emit('canvas-cleared');
+      socket.to(user.roomCode).emit('canvas-cleared');
     });
 
     // Disconnect

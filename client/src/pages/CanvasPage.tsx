@@ -68,10 +68,11 @@ export const CanvasPage: React.FC = () => {
   // Ink Strokes state & Sync Hook
   const [strokes, setStrokes] = useState<InkStroke[]>([]);
   const [currentStroke, setCurrentStroke] = useState<string | null>(null);
-  const { emitStrokeAdd, emitStrokeDelete, emitClearCanvas } = useSyncInk(socket, setStrokes);
 
   // Stickies state
   const [stickies, setStickies] = useState<StickyData[]>([]);
+
+  const { emitStrokeAdd, emitStrokeDelete, emitClearCanvas } = useSyncInk(socket, setStrokes, setCards, setStickies);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Radial menu state in screen and canvas space
@@ -108,8 +109,10 @@ export const CanvasPage: React.FC = () => {
   const initialPinchMidRef = useRef<{ x: number; y: number } | null>(null);
   const initialPanRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // History stack for Ctrl+Z Undo
-  const historyStackRef = useRef<{ strokes: InkStroke[]; cards: CodeCardData[]; stickies: StickyData[] }[]>([]);
+  // History stacks for Ctrl+Z Undo / Ctrl+Y Redo
+  type CanvasSnapshot = { strokes: InkStroke[]; cards: CodeCardData[]; stickies: StickyData[] };
+  const historyStackRef = useRef<CanvasSnapshot[]>([]);
+  const redoStackRef = useRef<CanvasSnapshot[]>([]);
 
   const saveHistorySnapshot = useCallback(() => {
     historyStackRef.current.push({
@@ -117,7 +120,8 @@ export const CanvasPage: React.FC = () => {
       cards: [...cards],
       stickies: [...stickies],
     });
-    if (historyStackRef.current.length > 40) {
+    redoStackRef.current = [];
+    if (historyStackRef.current.length > 50) {
       historyStackRef.current.shift();
     }
   }, [strokes, cards, stickies]);
@@ -127,12 +131,34 @@ export const CanvasPage: React.FC = () => {
       showToast('Nothing to undo');
       return;
     }
+    redoStackRef.current.push({
+      strokes: [...strokes],
+      cards: [...cards],
+      stickies: [...stickies],
+    });
     const prevSnapshot = historyStackRef.current.pop()!;
     setStrokes(prevSnapshot.strokes);
     setCards(prevSnapshot.cards);
     setStickies(prevSnapshot.stickies);
-    showToast('Undo performed');
-  }, [showToast]);
+    showToast('Undo');
+  }, [strokes, cards, stickies, showToast]);
+
+  const handleRedo = useCallback(() => {
+    if (redoStackRef.current.length === 0) {
+      showToast('Nothing to redo');
+      return;
+    }
+    historyStackRef.current.push({
+      strokes: [...strokes],
+      cards: [...cards],
+      stickies: [...stickies],
+    });
+    const nextSnapshot = redoStackRef.current.pop()!;
+    setStrokes(nextSnapshot.strokes);
+    setCards(nextSnapshot.cards);
+    setStickies(nextSnapshot.stickies);
+    showToast('Redo');
+  }, [strokes, cards, stickies, showToast]);
 
   // Individual deletion handlers
   const handleDeleteStroke = useCallback((strokeId: string) => {
@@ -446,6 +472,9 @@ export const CanvasPage: React.FC = () => {
 
   const updateStickyPosition = (id: string, x: number, y: number) => {
     setStickies(prev => prev.map(s => (s.id === id ? { ...s, x, y } : s)));
+    if (socket && socket.connected) {
+      socket.emit('sticky-move', { stickyId: id, x, y });
+    }
   };
 
   // Radial Menu Open / Close with Screen-Level Positioning
@@ -513,7 +542,7 @@ export const CanvasPage: React.FC = () => {
     }
   };
 
-  // Keyboard shortcut listener (Escape & Ctrl+Z / Cmd+Z Undo)
+  // Keyboard shortcut listener (Escape, Ctrl+Z Undo, Ctrl+Y Redo)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -522,7 +551,6 @@ export const CanvasPage: React.FC = () => {
         setLassoRect({ x: 0, y: 0, w: 0, h: 0, visible: false, analyzing: false });
       }
 
-      // Check if user is actively typing in an input, textarea, or contentEditable element
       const activeEl = document.activeElement;
       const isInputFocused = activeEl && (
         activeEl.tagName === 'INPUT' ||
@@ -530,14 +558,19 @@ export const CanvasPage: React.FC = () => {
         (activeEl as HTMLElement).isContentEditable
       );
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !isInputFocused) {
-        e.preventDefault();
-        handleUndo();
+      if ((e.ctrlKey || e.metaKey) && !isInputFocused) {
+        if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          handleUndo();
+        } else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) {
+          e.preventDefault();
+          handleRedo();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleUndo]);
+  }, [handleUndo, handleRedo]);
 
   // Pointer move broadcast for local cursor
   const handlePointerMoveCanvas = (e: React.PointerEvent) => {
@@ -861,6 +894,18 @@ export const CanvasPage: React.FC = () => {
     };
 
     setStickies(prev => [...prev, newSticky]);
+
+    if (socket && socket.connected) {
+      socket.emit('sticky-add', {
+        stickyId: newSticky.id,
+        x: newSticky.x,
+        y: newSticky.y,
+        zIndex: newSticky.zIndex,
+        title: newSticky.title,
+        bodyHtml: newSticky.bodyHtml,
+        tip: newSticky.tip,
+      });
+    }
   };
 
   const handleShare = async () => {
@@ -879,7 +924,48 @@ export const CanvasPage: React.FC = () => {
 
   const dismissSticky = (id: string) => {
     setStickies(prev => prev.filter(s => s.id !== id));
+    if (socket && socket.connected) {
+      socket.emit('sticky-delete', { stickyId: id });
+    }
   };
+
+  // Socket sticky sync listeners
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleStickyNew = (data: any) => {
+      setStickies(prev => {
+        if (prev.some(s => s.id === data.stickyId)) return prev;
+        return [...prev, {
+          id: data.stickyId,
+          x: data.x,
+          y: data.y,
+          zIndex: data.zIndex || 20,
+          title: data.title || 'SMART TUTOR',
+          bodyHtml: data.bodyHtml || '',
+          tip: data.tip,
+        }];
+      });
+    };
+
+    const handleStickyDeleted = (data: { stickyId: string }) => {
+      setStickies(prev => prev.filter(s => s.id !== data.stickyId));
+    };
+
+    const handleStickyMoved = (data: { stickyId: string; x: number; y: number }) => {
+      setStickies(prev => prev.map(s => s.id === data.stickyId ? { ...s, x: data.x, y: data.y } : s));
+    };
+
+    socket.on('sticky-new', handleStickyNew);
+    socket.on('sticky-deleted', handleStickyDeleted);
+    socket.on('sticky-moved', handleStickyMoved);
+
+    return () => {
+      socket.off('sticky-new', handleStickyNew);
+      socket.off('sticky-deleted', handleStickyDeleted);
+      socket.off('sticky-moved', handleStickyMoved);
+    };
+  }, [socket]);
 
   return (
     <div
