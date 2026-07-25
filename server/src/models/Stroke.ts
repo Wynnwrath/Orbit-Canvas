@@ -7,6 +7,8 @@ export interface IStroke extends Document {
   pathData: string;
   color: string;
   width: number;
+  x?: number;
+  y?: number;
   createdAt: Date;
 }
 
@@ -17,6 +19,8 @@ const StrokeSchema = new Schema<IStroke>({
   pathData: { type: String, required: true },
   color: { type: String, default: 'rgba(244,244,245,.9)' },
   width: { type: Number, default: 2.5 },
+  x: { type: Number, default: 0 },
+  y: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 });
 

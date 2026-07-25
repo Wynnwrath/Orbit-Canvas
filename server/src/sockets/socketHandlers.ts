@@ -134,7 +134,7 @@ export function setupSocketHandlers(io: Server) {
     });
 
     // Ink stroke additions
-    socket.on('stroke-add', async (strokeData: { strokeId: string; pathData: string; color?: string; width?: number }) => {
+    socket.on('stroke-add', async (strokeData: { strokeId: string; pathData: string; color?: string; width?: number; x?: number; y?: number }) => {
       const user = roomStore.getUser(socket.id);
       if (!user) return;
 
@@ -145,6 +145,8 @@ export function setupSocketHandlers(io: Server) {
         pathData: strokeData.pathData,
         color: strokeData.color || 'rgba(244,244,245,.9)',
         width: strokeData.width || 2.5,
+        x: strokeData.x || 0,
+        y: strokeData.y || 0,
       };
 
       roomStore.addStroke(strokeObj);
@@ -156,6 +158,29 @@ export function setupSocketHandlers(io: Server) {
       }
 
       socket.to(user.roomCode).emit('stroke-new', strokeObj);
+    });
+
+    // Ink stroke move sync
+    socket.on('stroke-move', async (data: { strokeId: string; x: number; y: number }) => {
+      const user = roomStore.getUser(socket.id);
+      if (!user) return;
+
+      roomStore.updateStrokePosition(user.roomCode, data.strokeId, data.x, data.y);
+
+      try {
+        await Stroke.updateOne(
+          { strokeId: data.strokeId, roomCode: user.roomCode },
+          { x: data.x, y: data.y }
+        );
+      } catch (_err) {
+        // ignore DB error
+      }
+
+      socket.to(user.roomCode).emit('stroke-moved', {
+        strokeId: data.strokeId,
+        x: data.x,
+        y: data.y,
+      });
     });
 
     // Card additions

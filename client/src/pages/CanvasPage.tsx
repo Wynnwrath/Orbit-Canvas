@@ -72,7 +72,7 @@ export const CanvasPage: React.FC = () => {
   // Stickies state
   const [stickies, setStickies] = useState<StickyData[]>([]);
 
-  const { emitStrokeAdd, emitStrokeDelete, emitClearCanvas } = useSyncInk(socket, setStrokes, setCards, setStickies);
+  const { emitStrokeAdd, emitStrokeMove, emitStrokeDelete, emitClearCanvas } = useSyncInk(socket, setStrokes, setCards, setStickies);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Radial menu state in screen and canvas space
@@ -99,6 +99,8 @@ export const CanvasPage: React.FC = () => {
     visible: false,
     analyzing: false,
   });
+
+  const cancelSingleTouchPanRef = useRef<(() => void) | null>(null);
 
   // Touch gesture refs (Multi-Touch Pinch/Pan, Long-Press Timer, Palm Rejection)
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -164,13 +166,18 @@ export const CanvasPage: React.FC = () => {
     showToast('Redo');
   }, [strokes, cards, stickies, showToast]);
 
-  // Individual deletion handlers
+  // Individual stroke & card handlers
   const handleDeleteStroke = useCallback((strokeId: string) => {
     saveHistorySnapshot();
     setStrokes(prev => prev.filter(s => s.id !== strokeId));
     emitStrokeDelete(strokeId);
     showToast('Erased ink stroke');
   }, [emitStrokeDelete, showToast, saveHistorySnapshot]);
+
+  const handleMoveStroke = useCallback((strokeId: string, x: number, y: number) => {
+    setStrokes(prev => prev.map(s => (s.id === strokeId ? { ...s, x, y } : s)));
+    emitStrokeMove(strokeId, x, y);
+  }, [emitStrokeMove]);
 
   const handleDeleteCard = useCallback((cardId: string) => {
     saveHistorySnapshot();
@@ -399,13 +406,17 @@ export const CanvasPage: React.FC = () => {
       }
 
       e.preventDefault();
-      // Only zoom on Ctrl+wheel when delta is large (real mouse wheel, not trackpad pinch).
-      // Trackpad pinch gestures fire ctrlKey=true with tiny fractional deltas (~±1-5).
-      const isIntentionalZoom = e.ctrlKey && !e.metaKey && Math.abs(e.deltaY) > 15;
-      if (isIntentionalZoom) {
-        const delta = e.deltaY < 0 ? 0.1 : -0.1;
+      const isZoom = e.ctrlKey || e.metaKey;
+      if (isZoom) {
+        let zoomDelta = -e.deltaY;
+        if (e.deltaMode === 1) zoomDelta *= 20;
+        else if (e.deltaMode === 2) zoomDelta *= 300;
+
+        const factor = Math.pow(1.0015, zoomDelta);
+
         setZoom(currentZoom => {
-          const nextZoom = Math.min(2.5, Math.max(0.4, +(currentZoom + delta).toFixed(2)));
+          const rawNext = currentZoom * factor;
+          const nextZoom = Math.min(2.5, Math.max(0.4, +rawNext.toFixed(3)));
           if (nextZoom !== currentZoom) {
             const mouseX = e.clientX;
             const mouseY = e.clientY;
@@ -628,11 +639,15 @@ export const CanvasPage: React.FC = () => {
           const cY = (e.clientY - pan.y) / zoom;
           setRadialState({ open: true, screenX: e.clientX, screenY: e.clientY, canvasX: cX, canvasY: cY });
         }, 350);
-      } else if (activePointersRef.current.size === 2) {
-        // Clear long-press timer when two fingers touch (pinch/pan gesture)
+      } else if (activePointersRef.current.size >= 2) {
+        // Clear long-press timer & single touch pan listener when multi-touch pinch starts
         if (longPressTimerRef.current) {
           clearTimeout(longPressTimerRef.current);
           longPressTimerRef.current = null;
+        }
+        if (cancelSingleTouchPanRef.current) {
+          cancelSingleTouchPanRef.current();
+          cancelSingleTouchPanRef.current = null;
         }
 
         // Initialize two-finger pinch baseline
@@ -683,7 +698,7 @@ export const CanvasPage: React.FC = () => {
     }
 
     // Touch single-finger canvas pan in idle mode
-    if (e.pointerType === 'touch' && mode === 'idle' && !(e.target as HTMLElement).closest('button, input, textarea, .topbar, #radial, .code-card, .sticky, .zoom-controls, .pen-toolbar')) {
+    if (e.pointerType === 'touch' && mode === 'idle' && !(e.target as HTMLElement).closest('button, input, textarea, .topbar, #radial, .code-card, .sticky, .zoom-controls, .pen-toolbar, svg#ink path')) {
       const startClientX = e.clientX;
       const startClientY = e.clientY;
       const startPanX = pan.x;
@@ -708,6 +723,13 @@ export const CanvasPage: React.FC = () => {
           longPressTimerRef.current = null;
         }
         activePointersRef.current.delete(ev.pointerId);
+        window.removeEventListener('pointermove', handleSingleTouchPanMove);
+        window.removeEventListener('pointerup', handleSingleTouchPanUp);
+        window.removeEventListener('pointercancel', handleSingleTouchPanUp);
+        cancelSingleTouchPanRef.current = null;
+      };
+
+      cancelSingleTouchPanRef.current = () => {
         window.removeEventListener('pointermove', handleSingleTouchPanMove);
         window.removeEventListener('pointerup', handleSingleTouchPanUp);
         window.removeEventListener('pointercancel', handleSingleTouchPanUp);
@@ -1071,7 +1093,10 @@ export const CanvasPage: React.FC = () => {
           currentColor={penColor}
           currentWidth={penWidth}
           mode={mode}
+          zoom={zoom}
           onDeleteStroke={handleDeleteStroke}
+          onMoveStrokeStart={saveHistorySnapshot}
+          onMoveStroke={handleMoveStroke}
         />
 
         {cards.map(card => (

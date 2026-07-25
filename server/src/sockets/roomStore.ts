@@ -15,6 +15,8 @@ export interface InMemoryStroke {
   pathData: string;
   color: string;
   width: number;
+  x?: number;
+  y?: number;
 }
 
 export interface InMemoryCard {
@@ -83,6 +85,15 @@ class RoomStore {
       this.strokesByRoom.set(code, []);
     }
     this.strokesByRoom.get(code)!.push(stroke);
+  }
+
+  updateStrokePosition(roomCode: string, strokeId: string, x: number, y: number) {
+    const strokes = this.strokesByRoom.get(roomCode.toUpperCase()) || [];
+    const stroke = strokes.find(s => s.strokeId === strokeId);
+    if (stroke) {
+      stroke.x = x;
+      stroke.y = y;
+    }
   }
 
   getStrokes(roomCode: string): InMemoryStroke[] {

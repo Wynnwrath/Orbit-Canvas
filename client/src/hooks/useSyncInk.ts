@@ -21,6 +21,8 @@ export function useSyncInk(
             d: s.pathData,
             color: s.color,
             strokeWidth: s.width,
+            x: s.x || 0,
+            y: s.y || 0,
           }))
         );
       }
@@ -34,8 +36,16 @@ export function useSyncInk(
           d: s.pathData,
           color: s.color,
           strokeWidth: s.width,
+          x: s.x || 0,
+          y: s.y || 0,
         },
       ]);
+    };
+
+    const handleStrokeMoved = (data: { strokeId: string; x: number; y: number }) => {
+      setStrokes(prev =>
+        prev.map(s => (s.id === data.strokeId ? { ...s, x: data.x, y: data.y } : s))
+      );
     };
 
     const handleStrokeDeleted = (data: { strokeId: string }) => {
@@ -50,12 +60,14 @@ export function useSyncInk(
 
     socket.on('room-state', handleRoomState);
     socket.on('stroke-new', handleStrokeNew);
+    socket.on('stroke-moved', handleStrokeMoved);
     socket.on('stroke-deleted', handleStrokeDeleted);
     socket.on('canvas-cleared', handleCanvasCleared);
 
     return () => {
       socket.off('room-state', handleRoomState);
       socket.off('stroke-new', handleStrokeNew);
+      socket.off('stroke-moved', handleStrokeMoved);
       socket.off('stroke-deleted', handleStrokeDeleted);
       socket.off('canvas-cleared', handleCanvasCleared);
     };
@@ -68,7 +80,14 @@ export function useSyncInk(
       pathData: stroke.d,
       color: stroke.color,
       width: stroke.strokeWidth,
+      x: stroke.x || 0,
+      y: stroke.y || 0,
     });
+  };
+
+  const emitStrokeMove = (strokeId: string, x: number, y: number) => {
+    if (!socket || !socket.connected) return;
+    socket.emit('stroke-move', { strokeId, x, y });
   };
 
   const emitStrokeDelete = (strokeId: string) => {
@@ -83,6 +102,7 @@ export function useSyncInk(
 
   return {
     emitStrokeAdd,
+    emitStrokeMove,
     emitStrokeDelete,
     emitClearCanvas,
   };
