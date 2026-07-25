@@ -1,12 +1,15 @@
 /* client/src/styles/reset.css */
 *, *::before, *::after {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html, body {
   height: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 body {
@@ -19,4 +22,12 @@ body {
 
 input, button, select, textarea {
   font: inherit;
+  touch-action: manipulation;
 }
+
+.canvas-spatial-viewport {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+

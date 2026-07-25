@@ -16,17 +16,22 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
   y,
   onSelectTool,
 }) => {
+  // Clamp screen coordinates so radial menu buttons stay within viewport safe area on mobile
+  const radius = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches ? 105 : 85;
+  const clampedX = typeof window !== 'undefined' ? Math.max(radius, Math.min(window.innerWidth - radius, x)) : x;
+  const clampedY = typeof window !== 'undefined' ? Math.max(radius, Math.min(window.innerHeight - radius, y)) : y;
+
   return (
     <div
       id="radial"
       data-od-id="radial-menu"
       className={isOpen ? 'open' : ''}
       style={{
-        left: `${x}px`,
-        top: `${y}px`,
+        left: `${clampedX}px`,
+        top: `${clampedY}px`,
       }}
-      data-x={x}
-      data-y={y}
+      data-x={clampedX}
+      data-y={clampedY}
     >
       <div className="ring" />
 

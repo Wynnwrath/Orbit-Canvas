@@ -87,6 +87,15 @@ export const CanvasPage: React.FC = () => {
     analyzing: false,
   });
 
+  // Touch gesture refs (Multi-Touch Pinch/Pan, Long-Press Timer, Palm Rejection)
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const longPressTimerRef = useRef<any>(null);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const initialPinchDistRef = useRef<number | null>(null);
+  const initialPinchZoomRef = useRef<number>(1.0);
+  const initialPinchMidRef = useRef<{ x: number; y: number } | null>(null);
+  const initialPanRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
   // Individual deletion handlers
   const handleDeleteStroke = useCallback((strokeId: string) => {
     setStrokes(prev => prev.filter(s => s.id !== strokeId));
@@ -135,6 +144,22 @@ export const CanvasPage: React.FC = () => {
       delete document.body.dataset.mode;
     };
   }, [mode]);
+
+  // Visual Viewport API listener to handle mobile virtual keyboard shifts smoothly
+  useEffect(() => {
+    if (!window.visualViewport) return;
+    const handleViewportResize = () => {
+      const vh = window.visualViewport?.height || window.innerHeight;
+      document.documentElement.style.setProperty('--vv-height', `${vh}px`);
+    };
+    window.visualViewport.addEventListener('resize', handleViewportResize);
+    window.visualViewport.addEventListener('scroll', handleViewportResize);
+    handleViewportResize();
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleViewportResize);
+      window.visualViewport?.removeEventListener('scroll', handleViewportResize);
+    };
+  }, []);
 
   // Restore spatial room snapshot from Cloud on mount
   useEffect(() => {
@@ -412,16 +437,136 @@ export const CanvasPage: React.FC = () => {
   }, []);
 
   // Pointer move broadcast for local cursor
+  // Pointer move broadcast for local cursor
   const handlePointerMoveCanvas = (e: React.PointerEvent) => {
     const canvasX = (e.clientX - pan.x) / zoom;
     const canvasY = (e.clientY - pan.y) / zoom;
     emitCursorMove(canvasX, canvasY);
+
+    // Cancel long-press timer if finger moves beyond 10px threshold
+    if (touchStartPosRef.current && longPressTimerRef.current && e.pointerType === 'touch') {
+      const moveDist = Math.hypot(e.clientX - touchStartPosRef.current.x, e.clientY - touchStartPosRef.current.y);
+      if (moveDist > 10) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    }
   };
 
-  // Pointer Down handling for canvas interactions & Middle Click / Spacebar Panning
+  // Pointer Down handling for canvas interactions & Middle Click / Spacebar Panning / Touch Gestures
   const handlePointerDownCanvas = (e: React.PointerEvent) => {
     if (radialState.open && !(e.target as HTMLElement).closest('#radial')) {
       closeRadial();
+    }
+
+    // Palm Rejection: Ignore large contact area touches (>25px)
+    if (e.pointerType === 'touch' && (e.width > 25 || e.height > 25)) {
+      return;
+    }
+
+    // Track active touch pointer
+    if (e.pointerType === 'touch') {
+      activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      // Long-press timer for radial menu on single touch
+      if (activePointersRef.current.size === 1) {
+        touchStartPosRef.current = { x: e.clientX, y: e.clientY };
+        if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = setTimeout(() => {
+          if (navigator.vibrate) navigator.vibrate(15);
+          const cX = (e.clientX - pan.x) / zoom;
+          const cY = (e.clientY - pan.y) / zoom;
+          setRadialState({ open: true, screenX: e.clientX, screenY: e.clientY, canvasX: cX, canvasY: cY });
+        }, 350);
+      } else if (activePointersRef.current.size === 2) {
+        // Clear long-press timer when two fingers touch (pinch/pan gesture)
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+
+        // Initialize two-finger pinch baseline
+        const pointers = Array.from(activePointersRef.current.values());
+        const dist = Math.hypot(pointers[1].x - pointers[0].x, pointers[1].y - pointers[0].y);
+        initialPinchDistRef.current = dist;
+        initialPinchZoomRef.current = zoom;
+        initialPinchMidRef.current = {
+          x: (pointers[0].x + pointers[1].x) / 2,
+          y: (pointers[0].y + pointers[1].y) / 2,
+        };
+        initialPanRef.current = { ...pan };
+
+        const handleTouchMove = (ev: PointerEvent) => {
+          if (activePointersRef.current.has(ev.pointerId)) {
+            activePointersRef.current.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+          }
+          if (activePointersRef.current.size === 2 && initialPinchDistRef.current && initialPinchMidRef.current) {
+            const pts = Array.from(activePointersRef.current.values());
+            const curDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+            const scaleRatio = curDist / initialPinchDistRef.current;
+            const newZoom = Math.min(Math.max(initialPinchZoomRef.current * scaleRatio, 0.4), 2.5);
+            setZoom(newZoom);
+
+            const curMid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+            const dx = curMid.x - initialPinchMidRef.current.x;
+            const dy = curMid.y - initialPinchMidRef.current.y;
+            setPan({ x: initialPanRef.current.x + dx, y: initialPanRef.current.y + dy });
+          }
+        };
+
+        const handleTouchUp = (ev: PointerEvent) => {
+          activePointersRef.current.delete(ev.pointerId);
+          if (activePointersRef.current.size < 2) {
+            initialPinchDistRef.current = null;
+            initialPinchMidRef.current = null;
+          }
+          window.removeEventListener('pointermove', handleTouchMove);
+          window.removeEventListener('pointerup', handleTouchUp);
+          window.removeEventListener('pointercancel', handleTouchUp);
+        };
+
+        window.addEventListener('pointermove', handleTouchMove);
+        window.addEventListener('pointerup', handleTouchUp);
+        window.addEventListener('pointercancel', handleTouchUp);
+        return;
+      }
+    }
+
+    // Touch single-finger canvas pan in idle mode
+    if (e.pointerType === 'touch' && mode === 'idle' && !(e.target as HTMLElement).closest('button, input, textarea, .topbar, #radial, .code-card, .sticky, .zoom-controls, .pen-toolbar')) {
+      const startClientX = e.clientX;
+      const startClientY = e.clientY;
+      const startPanX = pan.x;
+      const startPanY = pan.y;
+
+      const handleSingleTouchPanMove = (ev: PointerEvent) => {
+        if (touchStartPosRef.current && longPressTimerRef.current) {
+          const mDist = Math.hypot(ev.clientX - touchStartPosRef.current.x, ev.clientY - touchStartPosRef.current.y);
+          if (mDist > 10) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+          }
+        }
+        const dx = ev.clientX - startClientX;
+        const dy = ev.clientY - startClientY;
+        setPan({ x: startPanX + dx, y: startPanY + dy });
+      };
+
+      const handleSingleTouchPanUp = (ev: PointerEvent) => {
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+        activePointersRef.current.delete(ev.pointerId);
+        window.removeEventListener('pointermove', handleSingleTouchPanMove);
+        window.removeEventListener('pointerup', handleSingleTouchPanUp);
+        window.removeEventListener('pointercancel', handleSingleTouchPanUp);
+      };
+
+      window.addEventListener('pointermove', handleSingleTouchPanMove);
+      window.addEventListener('pointerup', handleSingleTouchPanUp);
+      window.addEventListener('pointercancel', handleSingleTouchPanUp);
+      return;
     }
 
     // Canvas Background Panning (Middle click or Spacebar + Left click)

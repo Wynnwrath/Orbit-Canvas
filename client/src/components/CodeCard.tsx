@@ -241,34 +241,65 @@ export const CodeCard: React.FC<CodeCardProps> = ({
       {/* Card Body — Double-Click or Click Edit Button to Rewrite */}
       <div className="card-body-editor" style={{ position: 'relative' }}>
         {isEditing ? (
-          <textarea
-            ref={textareaRef}
-            value={card.rawText}
-            onChange={handleTextChange}
-            onKeyDown={handleKeyDownTextarea}
-            onBlur={() => setIsEditing(false)}
-            onPointerDown={(e) => e.stopPropagation()}
-            placeholder="Paste or type code here..."
-            spellCheck={false}
-            style={{
-              width: '100%',
-              minHeight: '120px',
-              background: 'transparent',
-              color: 'var(--ink)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '12.5px',
-              lineHeight: '1.6',
-              border: 'none',
-              outline: 'none',
-              resize: 'none',
-              padding: '12px 14px',
-              whiteSpace: 'pre-wrap',
-              overflowWrap: 'break-word',
-              wordBreak: 'break-word',
-              boxSizing: 'border-box',
-              overflow: 'hidden',
-            }}
-          />
+          <>
+            {/* Inline Editor for Desktop */}
+            <textarea
+              ref={textareaRef}
+              value={card.rawText}
+              onChange={handleTextChange}
+              onKeyDown={handleKeyDownTextarea}
+              onBlur={() => setIsEditing(false)}
+              onPointerDown={(e) => e.stopPropagation()}
+              placeholder="Paste or type code here..."
+              spellCheck={false}
+              style={{
+                width: '100%',
+                minHeight: '120px',
+                background: 'transparent',
+                color: 'var(--ink)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '12.5px',
+                lineHeight: '1.6',
+                border: 'none',
+                outline: 'none',
+                resize: 'none',
+                padding: '12px 14px',
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+                boxSizing: 'border-box',
+                overflow: 'hidden',
+              }}
+            />
+
+            {/* Mobile Sheet Code Editor Modal */}
+            <div className="mobile-code-editor-modal" onPointerDown={e => e.stopPropagation()}>
+              <div className="mobile-editor-card">
+                <div className="mobile-editor-head">
+                  <span className="fname">Editing {card.filename}</span>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    style={{ padding: '6px 14px', fontSize: '13px' }}
+                    onClick={() => {
+                      setIsEditing(false);
+                      onToast('Code card saved to cloud');
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
+                <textarea
+                  value={card.rawText}
+                  onChange={handleTextChange}
+                  placeholder="Type code here..."
+                  spellCheck={false}
+                  autoFocus
+                  className="mobile-editor-textarea"
+                />
+              </div>
+            </div>
+          </>
         ) : (
           <pre
             onDoubleClick={toggleEditing}

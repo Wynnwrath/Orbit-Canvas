@@ -51,4 +51,12 @@
   --dur-normal:  150ms;
   --dur-pop:     260ms;
   --dur-spin:    700ms;
+
+  /* ── Mobile breakpoints ── */
+  --bp-sm: 480px;
+  --bp-md: 760px;
+  --bp-lg: 1024px;
+
+  /* ── Touch targets ── */
+  --touch-min: 44px;
 }
