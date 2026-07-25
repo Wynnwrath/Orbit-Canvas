@@ -84,7 +84,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', position: 'relative', overflowX: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', position: 'relative', overflowX: 'hidden', overflowY: 'auto' }}>
       <DotGridBg masked />
 
       <nav
@@ -145,7 +145,7 @@ export const DashboardPage: React.FC = () => {
         </button>
       </nav>
 
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 24px 40px 24px', width: '100%' }}>
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '110px 24px 80px 24px', width: '100%' }}>
         <div style={{ marginBottom: '32px' }}>
           <h1 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.5px', color: 'var(--fg)' }}>
             My Spatial Canvases
