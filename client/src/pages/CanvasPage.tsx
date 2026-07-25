@@ -19,6 +19,7 @@ import { PeerCursor } from '../components/PeerCursor';
 import { Toast } from '../components/Toast';
 import { HintBar } from '../components/HintBar';
 import { ZoomControls } from '../components/ZoomControls';
+import { ExportModal } from '../components/ExportModal';
 import { useToast } from '../hooks/useToast';
 import { useSocket } from '../hooks/useSocket';
 import { usePresence } from '../hooks/usePresence';
@@ -70,6 +71,7 @@ export const CanvasPage: React.FC = () => {
 
   // Stickies state
   const [stickies, setStickies] = useState<StickyData[]>([]);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Radial menu state in screen and canvas space
   const [radialState, setRadialState] = useState<{
@@ -278,33 +280,8 @@ export const CanvasPage: React.FC = () => {
   };
 
   // Manual PNG Export handler
-  const handleExportPNG = async () => {
-    if (!viewportRef.current) return;
-    showToast('Exporting PNG image...');
-    try {
-      const canvas = await html2canvas(viewportRef.current, {
-        backgroundColor: '#09090b',
-        useCORS: true,
-        logging: false,
-        scale: 1.5,
-        ignoreElements: (element) => {
-          return (
-            element.classList.contains('ai-lasso-rect') ||
-            element.classList.contains('peer-cursor') ||
-            element.id === 'radial'
-          );
-        },
-      });
-      if (canvas) {
-        const link = document.createElement('a');
-        link.download = `Orbit-Canvas-${roomCode}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        showToast('Canvas exported to PNG');
-      }
-    } catch (_err) {
-      showToast('Failed to export canvas image');
-    }
+  const handleExportPNG = () => {
+    setIsExportModalOpen(true);
   };
 
   // Trigger background spatial vector snapshot & canvas image preview save
@@ -897,6 +874,19 @@ export const CanvasPage: React.FC = () => {
       />
 
       <HintBar mode={mode} />
+      
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        roomCode={roomCode}
+        roomTitle={roomTitle}
+        viewportElem={viewportRef.current}
+        cards={cards}
+        strokes={strokes}
+        stickies={stickies}
+        onToast={showToast}
+      />
+
       <Toast message={toastMessage} />
     </div>
   );
