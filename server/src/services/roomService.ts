@@ -125,12 +125,17 @@ export async function joinRoom(code: string, userName: string): Promise<{ code: 
   }
 }
 
+import { savePreview } from './previewStorage.js';
+
 export async function updateRoomPreview(code: string, previewUrl: string): Promise<boolean> {
   const formattedCode = code.toUpperCase().trim();
+  const storedPath = savePreview(formattedCode, previewUrl);
+  const newUrl = storedPath || undefined;
+
   try {
     const room = await Room.findOne({ code: formattedCode });
     if (room) {
-      room.previewUrl = previewUrl;
+      room.previewUrl = newUrl;
       room.lastActive = new Date();
       await room.save();
       return true;
@@ -141,7 +146,7 @@ export async function updateRoomPreview(code: string, previewUrl: string): Promi
 
   if (inMemoryRooms.has(formattedCode)) {
     const mem = inMemoryRooms.get(formattedCode)!;
-    mem.previewUrl = previewUrl;
+    mem.previewUrl = newUrl;
     mem.lastActive = new Date();
     return true;
   }
@@ -220,15 +225,15 @@ export async function getRoomInfo(code: string): Promise<{ code: string; title: 
   throw new ApiError(404, `Room #${formattedCode} not found`, 'ROOM_NOT_FOUND');
 }
 
-export async function getRoomsBatch(codes: string[]): Promise<{ code: string; title: string; previewUrl?: string; snapshot?: IRoomSnapshot; exists: boolean; activeCount: number }[]> {
+export async function getRoomsBatch(codes: string[]): Promise<{ code: string; title: string; hasPreview: boolean; snapshot?: IRoomSnapshot; exists: boolean; activeCount: number }[]> {
   const results = [];
   for (const c of codes) {
     const formatted = c.toUpperCase().trim();
     try {
       const room = await getRoomInfo(formatted);
-      results.push({ code: formatted, title: room.title, previewUrl: room.previewUrl, snapshot: room.snapshot, exists: true, activeCount: room.activeCount });
+      results.push({ code: formatted, title: room.title, hasPreview: !!room.previewUrl, snapshot: room.snapshot, exists: true, activeCount: room.activeCount });
     } catch (_err) {
-      results.push({ code: formatted, title: `Workspace #${formatted}`, exists: false, activeCount: 0 });
+      results.push({ code: formatted, title: `Workspace #${formatted}`, hasPreview: false, exists: false, activeCount: 0 });
     }
   }
   return results;

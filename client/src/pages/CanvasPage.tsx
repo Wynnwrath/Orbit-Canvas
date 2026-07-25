@@ -275,6 +275,17 @@ export const CanvasPage: React.FC = () => {
   const saveCanvasPreview = useCallback(async () => {
     if (!viewportRef.current) return;
     try {
+      // Save current user view state
+      const prevZoom = zoom;
+      const prevPan = { ...pan };
+
+      // Reset to canonical view for clean capture
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+
+      // Wait two frames for DOM transform update
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
       const canvas = await html2canvas(viewportRef.current, {
         backgroundColor: '#09090b',
         useCORS: true,
@@ -284,12 +295,24 @@ export const CanvasPage: React.FC = () => {
           return (
             element.classList.contains('ai-lasso-rect') ||
             element.classList.contains('peer-cursor') ||
-            element.id === 'radial'
+            element.id === 'radial' ||
+            element.closest('.topbar') !== null ||
+            element.closest('.zoom-controls-wrapper') !== null ||
+            element.closest('.toast') !== null ||
+            element.closest('.hint') !== null ||
+            element.classList.contains('pen-toolbar') ||
+            element.classList.contains('mobile-drawer-overlay') ||
+            element.classList.contains('canvas-bg')
           );
         },
       });
+
+      // Restore previous user view
+      setZoom(prevZoom);
+      setPan(prevPan);
+
       if (canvas) {
-        const previewUrl = canvas.toDataURL('image/jpeg', 0.6);
+        const previewUrl = canvas.toDataURL('image/jpeg', 0.5);
         await apiRequest(`/api/rooms/${roomCode}/preview`, {
           method: 'POST',
           body: JSON.stringify({ previewUrl }),
@@ -298,7 +321,7 @@ export const CanvasPage: React.FC = () => {
     } catch (_err) {
       // ignore preview errors
     }
-  }, [roomCode]);
+  }, [roomCode, zoom, pan]);
 
   // Manual save handler
   const handleManualSave = async () => {
@@ -330,9 +353,21 @@ export const CanvasPage: React.FC = () => {
     setPan({ x: 0, y: 0 });
   };
 
+  // RAF animation refs for smooth panning & cursor movement throttling
+  const panRafRef = useRef<number>(0);
+  const moveRafRef = useRef<number>(0);
+  const emitPendingRef = useRef<{ canvasX: number; canvasY: number } | null>(null);
+
   // Mouse Wheel (2D Pan) & Ctrl/Meta + Wheel Zoom handler
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
+      // Allow native scroll for elements with overflow scroll/auto (e.g. code card <pre> blocks)
+      const target = e.target as HTMLElement;
+      const scrollable = target.closest('pre, .scrollable, [data-scrollable], textarea');
+      if (scrollable && !e.ctrlKey && !e.metaKey) {
+        return; // Let native element scroll work
+      }
+
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
         const delta = e.deltaY < 0 ? 0.1 : -0.1;
@@ -369,14 +404,20 @@ export const CanvasPage: React.FC = () => {
           moveY = rawDy;
         }
 
-        setPan(currentPan => ({
-          x: currentPan.x - moveX,
-          y: currentPan.y - moveY,
-        }));
+        cancelAnimationFrame(panRafRef.current);
+        panRafRef.current = requestAnimationFrame(() => {
+          setPan(currentPan => ({
+            x: currentPan.x - moveX,
+            y: currentPan.y - moveY,
+          }));
+        });
       }
     };
     window.addEventListener('wheel', handleWheel, { passive: false });
-    return () => window.removeEventListener('wheel', handleWheel);
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      cancelAnimationFrame(panRafRef.current);
+    };
   }, []);
 
   // Z-Index bring to front
@@ -499,11 +540,18 @@ export const CanvasPage: React.FC = () => {
   }, [handleUndo]);
 
   // Pointer move broadcast for local cursor
-  // Pointer move broadcast for local cursor
   const handlePointerMoveCanvas = (e: React.PointerEvent) => {
     const canvasX = (e.clientX - pan.x) / zoom;
     const canvasY = (e.clientY - pan.y) / zoom;
-    emitCursorMove(canvasX, canvasY);
+    
+    emitPendingRef.current = { canvasX, canvasY };
+    cancelAnimationFrame(moveRafRef.current);
+    moveRafRef.current = requestAnimationFrame(() => {
+      if (emitPendingRef.current) {
+        emitCursorMove(emitPendingRef.current.canvasX, emitPendingRef.current.canvasY);
+        emitPendingRef.current = null;
+      }
+    });
 
     // Cancel long-press timer if finger moves beyond 10px threshold
     if (touchStartPosRef.current && longPressTimerRef.current && e.pointerType === 'touch') {

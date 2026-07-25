@@ -46,6 +46,19 @@ router.post('/rooms/batch', async (req: Request, res: Response, next: NextFuncti
   }
 });
 
+import { getPreviewPath } from '../services/previewStorage.js';
+
+// GET /api/rooms/:code/preview — Serve thumbnail image from disk
+router.get('/rooms/:code/preview', (req: Request, res: Response) => {
+  const codeParam = req.params.code;
+  const roomCode = Array.isArray(codeParam) ? codeParam[0] : codeParam;
+  const filePath = getPreviewPath(roomCode);
+  if (!filePath) {
+    return res.status(404).json({ error: 'No preview available' });
+  }
+  res.sendFile(filePath);
+});
+
 // POST /api/rooms/:code/preview — Save real thumbnail snapshot preview URL
 router.post('/rooms/:code/preview', async (req: Request, res: Response, next: NextFunction) => {
   try {

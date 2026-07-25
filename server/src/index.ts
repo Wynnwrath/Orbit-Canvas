@@ -57,8 +57,11 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
+import { migrateBase64Previews } from './migrations/migratePreviewBase64.js';
+
 async function startServer() {
   await connectDB();
+  await migrateBase64Previews();
   server.listen(PORT, () => {
     console.log(`[Server] Orbit Canvas backend listening on port ${PORT}`);
   });

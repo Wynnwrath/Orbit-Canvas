@@ -30,22 +30,62 @@ export const DashboardPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
-  const [liveBatch, setLiveBatch] = useState<Record<string, { title?: string; previewUrl?: string; snapshot?: MiniCanvasSnapshot; activeCount?: number }>>({});
+  const [liveBatch, setLiveBatch] = useState<Record<string, { title?: string; hasPreview?: boolean; snapshot?: MiniCanvasSnapshot; activeCount?: number }>>({});
+
+  const PREVIEW_CACHE_KEY = 'orbit_canvas_preview_cache';
+  const [previewCache, setPreviewCache] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(PREVIEW_CACHE_KEY) || '{}');
+    } catch {
+      return {};
+    }
+  });
 
   useEffect(() => {
     if (savedRooms.length === 0) return;
     const fetchBatch = async () => {
       const codes = savedRooms.map(r => r.code);
-      const res = await apiRequest<{ rooms: { code: string; title: string; previewUrl?: string; snapshot?: MiniCanvasSnapshot; activeCount: number }[] }>('/api/rooms/batch', {
+      const res = await apiRequest<{ rooms: { code: string; title: string; hasPreview: boolean; snapshot?: MiniCanvasSnapshot; activeCount: number }[] }>('/api/rooms/batch', {
         method: 'POST',
         body: JSON.stringify({ codes })
       });
       if (res.ok && res.data?.rooms) {
-        const map: Record<string, { title?: string; previewUrl?: string; snapshot?: MiniCanvasSnapshot; activeCount?: number }> = {};
+        const map: Record<string, { title?: string; hasPreview?: boolean; snapshot?: MiniCanvasSnapshot; activeCount?: number }> = {};
         res.data.rooms.forEach(r => {
-          map[r.code] = { title: r.title, previewUrl: r.previewUrl, snapshot: r.snapshot, activeCount: r.activeCount };
+          map[r.code] = { title: r.title, hasPreview: r.hasPreview, snapshot: r.snapshot, activeCount: r.activeCount };
         });
         setLiveBatch(map);
+
+        // Fetch & cache thumbnail images for rooms that have previews but are not yet in local cache
+        for (const r of res.data.rooms) {
+          if (r.hasPreview && !previewCache[r.code]) {
+            try {
+              const imgRes = await fetch(`/api/rooms/${r.code}/preview`);
+              if (imgRes.ok) {
+                const blob = await imgRes.blob();
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const dataUrl = reader.result as string;
+                  setPreviewCache(prev => {
+                    const next = { ...prev, [r.code]: dataUrl };
+                    // Limit cache size to 20 previews
+                    const keys = Object.keys(next);
+                    if (keys.length > 20) {
+                      delete next[keys[0]];
+                    }
+                    try {
+                      localStorage.setItem(PREVIEW_CACHE_KEY, JSON.stringify(next));
+                    } catch {}
+                    return next;
+                  });
+                };
+                reader.readAsDataURL(blob);
+              }
+            } catch {
+              /* ignore */
+            }
+          }
+        }
       }
     };
     fetchBatch();
@@ -196,7 +236,10 @@ export const DashboardPage: React.FC = () => {
             {savedRooms.map((room, index) => {
               const liveData = liveBatch[room.code];
               const displayTitle = liveData?.title || room.title || `Workspace #${room.code}`;
-              const previewImage = liveData?.previewUrl;
+              const cachedPreview = previewCache[room.code];
+              const previewImage = liveData?.hasPreview
+                ? (cachedPreview || `/api/rooms/${room.code}/preview`)
+                : undefined;
               const snapshotData = liveData?.snapshot;
               const activeCount = liveData?.activeCount || 0;
               const isHovered = hoveredCard === room.code;
