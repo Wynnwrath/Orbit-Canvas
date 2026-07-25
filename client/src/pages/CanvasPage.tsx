@@ -399,7 +399,10 @@ export const CanvasPage: React.FC = () => {
       }
 
       e.preventDefault();
-      if (e.ctrlKey || e.metaKey) {
+      // Only zoom on Ctrl+wheel when delta is large (real mouse wheel, not trackpad pinch).
+      // Trackpad pinch gestures fire ctrlKey=true with tiny fractional deltas (~±1-5).
+      const isIntentionalZoom = e.ctrlKey && !e.metaKey && Math.abs(e.deltaY) > 15;
+      if (isIntentionalZoom) {
         const delta = e.deltaY < 0 ? 0.1 : -0.1;
         setZoom(currentZoom => {
           const nextZoom = Math.min(2.5, Math.max(0.4, +(currentZoom + delta).toFixed(2)));
