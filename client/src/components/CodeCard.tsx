@@ -203,7 +203,8 @@ export const CodeCard: React.FC<CodeCardProps> = ({
           <button
             className="copybtn"
             type="button"
-            onMouseDown={(e) => e.preventDefault()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             onClick={toggleEditing}
             style={{
               borderColor: isEditing ? 'var(--accent-border)' : 'var(--border)',
@@ -216,7 +217,8 @@ export const CodeCard: React.FC<CodeCardProps> = ({
             className="copybtn"
             data-copy
             type="button"
-            onMouseDown={(e) => e.preventDefault()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             onClick={handleCopy}
           >
             {copied ? 'Copied' : 'Copy'}
@@ -225,7 +227,8 @@ export const CodeCard: React.FC<CodeCardProps> = ({
             <button
               className="card-delete-btn"
               type="button"
-              onMouseDown={(e) => e.preventDefault()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
               onClick={handleDeleteCard}
               title="Delete Code Snippet"
             >

@@ -717,8 +717,8 @@ export const CanvasPage: React.FC = () => {
       }
     }
 
-    // Touch single-finger canvas pan in idle mode
-    if (e.pointerType === 'touch' && mode === 'idle' && !(e.target as HTMLElement).closest('button, input, textarea, .topbar, #radial, .code-card, .sticky, .zoom-controls, .pen-toolbar, svg#ink path')) {
+    // Touch single-finger canvas pan in idle/select mode
+    if (e.pointerType === 'touch' && (mode === 'idle' || mode === 'select') && !(e.target as HTMLElement).closest('button, input, textarea, .topbar, #radial, .code-card, .sticky, .zoom-controls, .pen-toolbar, svg#ink path')) {
       const startClientX = e.clientX;
       const startClientY = e.clientY;
       const startPanX = pan.x;

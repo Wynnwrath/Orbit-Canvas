@@ -26,6 +26,8 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
       id="radial"
       data-od-id="radial-menu"
       className={isOpen ? 'open' : ''}
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
       style={{
         left: `${clampedX}px`,
         top: `${clampedY}px`,

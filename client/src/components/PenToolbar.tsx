@@ -33,7 +33,12 @@ export const PenToolbar: React.FC<PenToolbarProps> = ({
   onClose,
 }) => {
   return (
-    <div className="pen-toolbar" data-od-id="pen-toolbar">
+    <div
+      className="pen-toolbar"
+      data-od-id="pen-toolbar"
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+    >
       <div className="pen-toolbar-section">
         <span className="pen-toolbar-label">Color</span>
         <div className="color-swatches">

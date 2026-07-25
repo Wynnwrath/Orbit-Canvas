@@ -45,6 +45,8 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
   return (
     <div
       className="zoom-controls-wrapper"
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
       style={{
         position: 'fixed',
         bottom: '20px',
@@ -55,6 +57,7 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
         gap: '8px',
         flexWrap: 'wrap',
         justifyContent: 'flex-end',
+        pointerEvents: 'none',
       }}
     >
       {/* Coordinate Badge (Hidden on Mobile via CSS) */}

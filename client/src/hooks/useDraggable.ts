@@ -16,6 +16,7 @@ export function useDraggable(
     e: React.PointerEvent<HTMLElement>,
     cardElement: HTMLElement | null
   ) => {
+    e.stopPropagation();
     if (!cardElement) return;
 
     // Don't drag if clicking buttons or inputs

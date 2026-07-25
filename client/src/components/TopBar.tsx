@@ -49,7 +49,12 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   return (
     <>
-      <header className="topbar" data-od-id="topbar">
+      <header
+        className="topbar"
+        data-od-id="topbar"
+        onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+      >
         <div className="topbar-desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <button
             className="home-btn"
