@@ -10,6 +10,10 @@
   --glass:        rgba(23, 23, 27, 0.55);
   --card:         rgba(20, 20, 24, 0.75);
 
+  /* ── Canvas Background Grid & Vignette ── */
+  --dot-color:    rgba(255, 255, 255, 0.22);
+  --vignette:     radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.42));
+
   /* ── Accent palette ── */
   --accent:       #22d3ee;
   --accent-dim:   rgba(34, 211, 238, 0.13);
@@ -66,25 +70,39 @@
 }
 
 [data-theme='light'] {
-  --bg: #fafafa;
-  --fg: #0a0a0f;
-  --ink: #1f1f2e;
-  --muted: #64647a;
-  --faint: #9494a6;
-  --border: rgba(0, 0, 0, 0.08);
-  --glass: rgba(255, 255, 255, 0.7);
-  --card: rgba(255, 255, 255, 0.85);
-  --accent-dim: rgba(34, 211, 238, 0.08);
-  --accent-border: rgba(34, 211, 238, 0.4);
-  --accent-ink: #05262c;
-  --shadow-card: 0 10px 40px rgba(0,0,0,0.06), 0 0 20px rgba(34,211,238,0.04);
-  --shadow-heavy: 0 20px 60px rgba(0,0,0,0.08);
-  --shadow-topbar: 0 4px 20px rgba(0,0,0,0.05);
+  --bg: #eef2f6;            /* Soothing slate off-white canvas (non-blinding, comfortable) */
+  --fg: #0f172a;            /* Slate 900 for high-contrast crisp text */
+  --ink: #1e293b;           /* Slate 800 */
+  --muted: #475569;         /* Slate 600 */
+  --faint: #64748b;         /* Slate 500 */
+  --border: rgba(15, 23, 42, 0.12);
+  --glass: rgba(255, 255, 255, 0.82);
+  --card: #ffffff;          /* Clean white floating cards */
 
-  --tool-glass: rgba(255, 255, 255, 0.85);
-  --tool-bg: rgba(255, 255, 255, 0.9);
-  --av-border: #fafafa;
-  --av-more-bg: #d4d4d8;
+  --dot-color: rgba(15, 23, 42, 0.22); /* Crisp slate dots, clearly visible on canvas */
+  --vignette: radial-gradient(ellipse at center, transparent 65%, rgba(15, 23, 42, 0.04));
+
+  /* High contrast accent in light mode */
+  --accent: #0284c7;
+  --accent-dim: rgba(2, 132, 199, 0.1);
+  --accent-border: rgba(2, 132, 199, 0.35);
+  --accent-ink: #ffffff;
+
+  --shadow-card: 0 12px 32px rgba(15, 23, 42, 0.08), 0 0 16px rgba(2, 132, 199, 0.06);
+  --shadow-heavy: 0 24px 60px rgba(15, 23, 42, 0.12);
+  --shadow-topbar: 0 8px 24px rgba(15, 23, 42, 0.08);
+
+  --tool-glass: rgba(255, 255, 255, 0.92);
+  --tool-bg: #ffffff;
+  --av-border: #ffffff;
+  --av-more-bg: #cbd5e1;
   --drawer-bg: #ffffff;
+
+  /* Syntax highlighting light mode */
+  --syn-k: #7c3aed;    /* keywords */
+  --syn-s: #16a34a;    /* strings */
+  --syn-t: #0284c7;    /* types */
+  --syn-n: #d97706;    /* numbers */
+  --syn-c: #64748b;    /* comments */
 }
 

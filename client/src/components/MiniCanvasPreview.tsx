@@ -45,7 +45,7 @@ export const MiniCanvasPreview: React.FC<MiniCanvasPreviewProps> = ({
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.12) 1px, transparent 1px)',
+          backgroundImage: 'radial-gradient(circle, var(--dot-color) 1px, transparent 1px)',
           backgroundSize: '16px 16px',
           opacity: 0.6,
           pointerEvents: 'none',
