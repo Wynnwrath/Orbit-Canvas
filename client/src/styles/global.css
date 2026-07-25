@@ -978,3 +978,104 @@ body[data-mode="eraser"] {
   color: var(--fg);
 }
 
+/* ---------- Canvas Scope Boundary ---------- */
+.canvas-scope-boundary {
+  border: 1.5px dashed rgba(34, 211, 238, 0.22);
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(34, 211, 238, 0.03);
+  transition: border-color 0.3s ease;
+}
+
+.scope-frame-border {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: radial-gradient(circle at top left, rgba(34, 211, 238, 0.04), transparent 40%);
+  pointer-events: none;
+}
+
+.scope-corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: rgba(34, 211, 238, 0.6);
+  border-style: solid;
+  pointer-events: none;
+}
+
+.scope-corner.top-left {
+  top: -2px;
+  left: -2px;
+  border-width: 2px 0 0 2px;
+  border-top-left-radius: 16px;
+}
+
+.scope-corner.top-right {
+  top: -2px;
+  right: -2px;
+  border-width: 2px 2px 0 0;
+  border-top-right-radius: 16px;
+}
+
+.scope-corner.bottom-left {
+  bottom: -2px;
+  left: -2px;
+  border-width: 0 0 2px 2px;
+  border-bottom-left-radius: 16px;
+}
+
+.scope-corner.bottom-right {
+  bottom: -2px;
+  right: -2px;
+  border-width: 0 2px 2px 0;
+  border-bottom-right-radius: 16px;
+}
+
+.scope-label-badge {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  background: rgba(18, 18, 22, 0.7);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+}
+
+.scope-dot-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.origin-marker-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent);
+  background: rgba(18, 18, 22, 0.85);
+  border: 1px solid var(--accent-border);
+  padding: 4px 10px;
+  border-radius: 999px;
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.2);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.origin-crosshair {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+}
+
+

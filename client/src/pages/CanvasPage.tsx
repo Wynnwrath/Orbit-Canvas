@@ -14,6 +14,7 @@ import type { StickyData } from '../components/AISticky';
 import { InkLayer } from '../components/InkLayer';
 import type { InkStroke } from '../components/InkLayer';
 import { PenToolbar } from '../components/PenToolbar';
+import { CanvasScopeBoundary } from '../components/CanvasScopeBoundary';
 import { PeerCursor } from '../components/PeerCursor';
 import { Toast } from '../components/Toast';
 import { HintBar } from '../components/HintBar';
@@ -61,11 +62,19 @@ export const CanvasPage: React.FC = () => {
   // Stickies state
   const [stickies, setStickies] = useState<StickyData[]>([]);
 
-  // Radial menu state
-  const [radialState, setRadialState] = useState<{ open: boolean; x: number; y: number }>({
+  // Radial menu state in screen and canvas space
+  const [radialState, setRadialState] = useState<{
+    open: boolean;
+    screenX: number;
+    screenY: number;
+    canvasX: number;
+    canvasY: number;
+  }>({
     open: false,
-    x: 0,
-    y: 0,
+    screenX: 0,
+    screenY: 0,
+    canvasX: 0,
+    canvasY: 0,
   });
 
   // AI Lasso rect
@@ -277,15 +286,22 @@ export const CanvasPage: React.FC = () => {
     setStickies(prev => prev.map(s => (s.id === id ? { ...s, x, y } : s)));
   };
 
-  // Radial Menu Open / Close
+  // Radial Menu Open / Close with Screen-Level Positioning
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
-    const m = 95;
-    const clientX = (e.clientX - pan.x) / zoom;
-    const clientY = (e.clientY - pan.y) / zoom;
-    const x = Math.min(Math.max(clientX, m), window.innerWidth / zoom - m);
-    const y = Math.min(Math.max(clientY, m), window.innerHeight / zoom - m);
-    setRadialState({ open: true, x, y });
+    const margin = 80;
+    const screenX = Math.min(Math.max(e.clientX, margin), window.innerWidth - margin);
+    const screenY = Math.min(Math.max(e.clientY, margin), window.innerHeight - margin);
+    const canvasX = (screenX - pan.x) / zoom;
+    const canvasY = (screenY - pan.y) / zoom;
+
+    setRadialState({
+      open: true,
+      screenX,
+      screenY,
+      canvasX,
+      canvasY,
+    });
   };
 
   const closeRadial = () => {
@@ -293,7 +309,7 @@ export const CanvasPage: React.FC = () => {
   };
 
   // Radial tool action
-  const handleSelectTool = (tool: RadialTool, x: number, y: number) => {
+  const handleSelectTool = (tool: RadialTool) => {
     closeRadial();
     if (tool === 'pen') {
       setMode('pen');
@@ -314,12 +330,16 @@ export const CanvasPage: React.FC = () => {
       const newCardId = `card-extra-${Date.now()}`;
       const newZ = zTop + 1;
       setZTop(newZ);
+
+      const targetX = radialState.canvasX;
+      const targetY = radialState.canvasY;
+
       const newCard: CodeCardData = {
         id: newCardId,
         filename: 'snippet.ts',
         rawText: `// Double click to edit code!\nconst greeting = "Hello, Orbit Canvas!";`,
-        x: Math.min(Math.max(x + 40, 12), window.innerWidth / zoom - 380),
-        y: Math.min(Math.max(y - 20, 80), window.innerHeight / zoom - 200),
+        x: targetX,
+        y: targetY,
         zIndex: newZ,
         isExtra: true,
       };
@@ -591,6 +611,8 @@ export const CanvasPage: React.FC = () => {
           pointerEvents: 'auto',
         }}
       >
+        <CanvasScopeBoundary width={3600} height={2400} />
+
         <InkLayer
           strokes={strokes}
           currentStrokeD={currentStroke || undefined}
@@ -629,18 +651,19 @@ export const CanvasPage: React.FC = () => {
 
         <AILasso rect={lassoRect} />
 
-        <RadialMenu
-          isOpen={radialState.open}
-          x={radialState.x}
-          y={radialState.y}
-          onSelectTool={handleSelectTool}
-          onClose={closeRadial}
-        />
-
         {remoteCursors.map(peer => (
           <PeerCursor key={peer.id} peer={peer} />
         ))}
       </div>
+
+      {/* Screen-Overlay Level Context / Radial Menu (Scale Independent) */}
+      <RadialMenu
+        isOpen={radialState.open}
+        x={radialState.screenX}
+        y={radialState.screenY}
+        onSelectTool={handleSelectTool}
+        onClose={closeRadial}
+      />
 
       {mode === 'pen' && (
         <PenToolbar
@@ -654,6 +677,7 @@ export const CanvasPage: React.FC = () => {
 
       <ZoomControls
         zoom={zoom}
+        pan={pan}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onResetZoom={handleResetZoom}
