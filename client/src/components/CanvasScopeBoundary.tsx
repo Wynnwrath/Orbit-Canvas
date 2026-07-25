@@ -39,20 +39,6 @@ export const CanvasScopeBoundary: React.FC<CanvasScopeBoundaryProps> = ({
         <span className="scope-dot-indicator" />
         SPATIAL WORKSPACE · {width} × {height} PX
       </div>
-
-      {/* Origin (0,0) Marker Badge */}
-      <div
-        className="origin-marker-badge"
-        style={{
-          position: 'absolute',
-          left: `${-minX}px`,
-          top: `${-minY}px`,
-          transform: 'translate(-50%, -50%)',
-        }}
-      >
-        <div className="origin-crosshair" />
-        <span className="origin-text">ORIGIN (0,0)</span>
-      </div>
     </div>
   );
 };
