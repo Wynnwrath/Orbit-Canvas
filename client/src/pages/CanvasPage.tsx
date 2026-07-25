@@ -59,6 +59,7 @@ export const CanvasPage: React.FC = () => {
   const [zoom, setZoom] = useState<number>(1.0);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [isDraggingPan, setIsDraggingPan] = useState(false);
 
   // Cards state & Sync Hook
   const [cards, setCards] = useState<CodeCardData[]>([]);
@@ -301,11 +302,11 @@ export const CanvasPage: React.FC = () => {
     setPan({ x: 0, y: 0 });
   };
 
-  // Mouse-Pointer-Centered Wheel Zoom handler
+  // Mouse Wheel (2D Pan) & Ctrl/Meta + Wheel Zoom handler
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
         const delta = e.deltaY < 0 ? 0.1 : -0.1;
         setZoom(currentZoom => {
           const nextZoom = Math.min(2.5, Math.max(0.4, +(currentZoom + delta).toFixed(2)));
@@ -319,6 +320,12 @@ export const CanvasPage: React.FC = () => {
           }
           return nextZoom;
         });
+      } else {
+        // Standard mouse wheel scroll or trackpad 2-finger swipe -> 2D Canvas Pan
+        setPan(currentPan => ({
+          x: currentPan.x - e.deltaX,
+          y: currentPan.y - e.deltaY,
+        }));
       }
     };
     window.addEventListener('wheel', handleWheel, { passive: false });
@@ -562,8 +569,11 @@ export const CanvasPage: React.FC = () => {
       return;
     }
 
-    // Canvas Background Panning (Middle click or Spacebar + Left click)
-    if (e.button === 1 || isSpacePressed) {
+    // Canvas Background Panning (Middle click, Spacebar + Left click, or Left click on Canvas BG in idle mode)
+    const isInteractiveElement = !!(e.target as HTMLElement).closest('button, input, textarea, .topbar, #radial, .code-card, .sticky, .zoom-controls, .pen-toolbar');
+
+    if (e.button === 1 || isSpacePressed || (e.button === 0 && mode === 'idle' && !isInteractiveElement)) {
+      setIsDraggingPan(true);
       const startClientX = e.clientX;
       const startClientY = e.clientY;
       const startPanX = pan.x;
@@ -576,6 +586,7 @@ export const CanvasPage: React.FC = () => {
       };
 
       const handlePanUp = () => {
+        setIsDraggingPan(false);
         window.removeEventListener('pointermove', handlePanMove);
         window.removeEventListener('pointerup', handlePanUp);
       };
@@ -766,7 +777,14 @@ export const CanvasPage: React.FC = () => {
         height: '100vh',
         overflow: 'hidden',
         position: 'relative',
-        cursor: isSpacePressed ? 'grab' : 'default',
+        touchAction: 'none',
+        cursor: isDraggingPan
+          ? 'grabbing'
+          : isSpacePressed || mode === 'idle'
+          ? 'grab'
+          : mode === 'pen' || mode === 'lasso'
+          ? 'crosshair'
+          : 'default',
       }}
       onContextMenu={handleContextMenu}
       onPointerDown={handlePointerDownCanvas}
