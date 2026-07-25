@@ -173,7 +173,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               flexDirection: 'column',
               overflow: 'hidden',
               borderRadius: 'var(--radius-xl)',
-              boxShadow: '0 32px 80px rgba(0,0,0,0.85), 0 0 40px rgba(56, 189, 248, 0.15)',
+              boxShadow: 'var(--shadow-heavy)',
             }}
             onClick={e => e.stopPropagation()}
           >
@@ -184,7 +184,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                background: 'rgba(15, 23, 42, 0.5)',
+                background: 'var(--glass)',
               }}
             >
               <div>
@@ -242,7 +242,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     width: '100%',
                     borderRadius: 'var(--radius-md)',
                     border: '1px solid var(--border)',
-                    background: bgStyle === 'light-grid' ? '#f8fafc' : '#09090b',
+                    background: bgStyle === 'light-grid' ? '#f8fafc' : 'var(--bg)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -400,7 +400,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 alignItems: 'center',
                 justifyContent: 'flex-end',
                 gap: '12px',
-                background: 'rgba(15, 23, 42, 0.5)',
+                background: 'var(--glass)',
               }}
             >
               <button

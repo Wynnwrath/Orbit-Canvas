@@ -124,8 +124,8 @@ export const MiniCanvasPreview: React.FC<MiniCanvasPreviewProps> = ({
                   borderRadius: '8px',
                   padding: '6px',
                   boxShadow: isHovered
-                    ? '0 8px 20px rgba(0,0,0,0.6), 0 0 16px rgba(34, 211, 238, 0.25)'
-                    : '0 4px 12px rgba(0,0,0,0.5)',
+                    ? 'var(--shadow-heavy)'
+                    : 'var(--shadow-card)',
                   transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
                   transition: 'all 0.25s ease',
                   pointerEvents: 'none',
@@ -160,11 +160,11 @@ export const MiniCanvasPreview: React.FC<MiniCanvasPreviewProps> = ({
                   top: `${posY}px`,
                   width: '90px',
                   height: '52px',
-                  background: 'rgba(18, 18, 22, 0.9)',
+                  background: 'var(--card)',
                   border: '1px solid var(--accent-border)',
                   borderRadius: '8px',
                   padding: '5px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                  boxShadow: 'var(--shadow-card)',
                   transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
                   transition: 'all 0.25s ease',
                   pointerEvents: 'none',

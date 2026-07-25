@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { JoinPage } from './pages/JoinPage';
 import { CanvasPage } from './pages/CanvasPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { easings, durations } from './lib/animation';
+import { useThemeStore } from './stores/theme.store';
 
 const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -26,6 +27,24 @@ const PageTransition: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 export const App: React.FC = () => {
+  const mode = useThemeStore(s => s.mode);
+  const accent = useThemeStore(s => s.accent);
+
+  // Set initial theme from localStorage OR system preference on first visit
+  useEffect(() => {
+    if (!localStorage.getItem('theme-prefs')) {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      useThemeStore.getState().setMode(prefersDark ? 'dark' : 'light');
+    }
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-theme', mode);
+    root.style.setProperty('--color-accent', accent);
+    root.style.setProperty('--accent', accent);
+  }, [mode, accent]);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -38,3 +57,4 @@ export const App: React.FC = () => {
 };
 
 export default App;
+

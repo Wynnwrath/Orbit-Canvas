@@ -57,6 +57,34 @@
   --bp-md: 760px;
   --bp-lg: 1024px;
 
-  /* ── Touch targets ── */
-  --touch-min: 44px;
+  /* ── Component visibility & tool surface defaults (Dark) ── */
+  --tool-glass: rgba(18, 18, 22, 0.85);   /* floating toolbars */
+  --tool-bg: rgba(22, 22, 26, 0.85);      /* radial menu */
+  --av-border: #101014;                     /* avatar ring */
+  --av-more-bg: #27272a;                   /* avatar overflow */
+  --drawer-bg: #101014;                     /* mobile drawer */
 }
+
+[data-theme='light'] {
+  --bg: #fafafa;
+  --fg: #0a0a0f;
+  --ink: #1f1f2e;
+  --muted: #64647a;
+  --faint: #9494a6;
+  --border: rgba(0, 0, 0, 0.08);
+  --glass: rgba(255, 255, 255, 0.7);
+  --card: rgba(255, 255, 255, 0.85);
+  --accent-dim: rgba(34, 211, 238, 0.08);
+  --accent-border: rgba(34, 211, 238, 0.4);
+  --accent-ink: #05262c;
+  --shadow-card: 0 10px 40px rgba(0,0,0,0.06), 0 0 20px rgba(34,211,238,0.04);
+  --shadow-heavy: 0 20px 60px rgba(0,0,0,0.08);
+  --shadow-topbar: 0 4px 20px rgba(0,0,0,0.05);
+
+  --tool-glass: rgba(255, 255, 255, 0.85);
+  --tool-bg: rgba(255, 255, 255, 0.9);
+  --av-border: #fafafa;
+  --av-more-bg: #d4d4d8;
+  --drawer-bg: #ffffff;
+}
+

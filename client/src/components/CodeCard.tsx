@@ -185,10 +185,10 @@ export const CodeCard: React.FC<CodeCardProps> = ({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '3px',
-            background: 'rgba(255,255,255,0.04)',
+            background: 'var(--glass)',
             padding: '2px 6px',
             borderRadius: '4px',
-            border: '1px solid rgba(255,255,255,0.06)',
+            border: '1px solid var(--border)',
             lineHeight: 1,
             marginLeft: '4px',
           }}

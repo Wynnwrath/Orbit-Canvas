@@ -341,8 +341,9 @@ export const CanvasPage: React.FC = () => {
       // Wait one frame for layout
       await new Promise(r => requestAnimationFrame(r));
 
+      const currentBg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#09090b';
       const canvas = await html2canvas(clone, {
-        backgroundColor: '#09090b',
+        backgroundColor: currentBg,
         useCORS: true,
         logging: false,
         scale: 0.5,

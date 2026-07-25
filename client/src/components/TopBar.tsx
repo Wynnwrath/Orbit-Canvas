@@ -11,7 +11,10 @@ import {
   CloudArrowUp,
   Camera,
   House,
+  Sun,
+  Moon,
 } from '@phosphor-icons/react';
+import { useThemeStore } from '../stores/theme.store';
 
 interface TopBarProps {
   roomCode: string;
@@ -37,6 +40,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onSwitchRoom
 }) => {
   const navigate = useNavigate();
+  const { mode, setMode } = useThemeStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const avatarClasses = ['av-a', 'av-b', 'av-c'];
@@ -220,6 +224,16 @@ export const TopBar: React.FC<TopBarProps> = ({
             <ShareNetwork size={14} weight="regular" style={{ marginRight: '4px', display: 'inline', verticalAlign: 'middle' }} />
             Share
           </button>
+
+          <button
+            className="share"
+            type="button"
+            onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')}
+            title={`Switch to ${mode === 'dark' ? 'Light' : 'Dark'} Mode`}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 9px' }}
+          >
+            {mode === 'dark' ? <Sun size={14} weight="bold" /> : <Moon size={14} weight="bold" />}
+          </button>
         </div>
 
         <button
@@ -277,6 +291,23 @@ export const TopBar: React.FC<TopBarProps> = ({
                   Export PNG Image
                 </button>
               )}
+
+              <button
+                className="drawer-action-btn"
+                onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')}
+              >
+                {mode === 'dark' ? (
+                  <>
+                    <Sun size={16} weight="bold" style={{ marginRight: '6px' }} />
+                    Switch to Light Mode
+                  </>
+                ) : (
+                  <>
+                    <Moon size={16} weight="bold" style={{ marginRight: '6px' }} />
+                    Switch to Dark Mode
+                  </>
+                )}
+              </button>
 
               <hr className="drawer-divider" />
 

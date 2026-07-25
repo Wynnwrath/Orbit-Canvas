@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LinkSimple, Trash, ArrowLeft, Palette } from '@phosphor-icons/react';
+import { LinkSimple, Trash, ArrowLeft, Palette, Sun, Moon } from '@phosphor-icons/react';
 import { DotGridBg } from '../components/DotGridBg';
 import { BrandHeader } from '../components/BrandHeader';
 import { Toast } from '../components/Toast';
@@ -10,6 +10,7 @@ import { CreateRoomModal } from '../components/CreateRoomModal';
 import { MiniCanvasPreview } from '../components/MiniCanvasPreview';
 import type { MiniCanvasSnapshot } from '../components/MiniCanvasPreview';
 import { apiRequest } from '../services/api';
+import { useThemeStore } from '../stores/theme.store';
 
 function formatRelativeTime(timestamp: number): string {
   const diffMs = Date.now() - timestamp;
@@ -24,6 +25,7 @@ function formatRelativeTime(timestamp: number): string {
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { mode, setMode } = useThemeStore();
   const { toastMessage, showToast } = useToast();
   const { savedName, updateSavedName, savedRooms, addSavedRoom, removeSavedRoom } = useSavedRooms();
 
@@ -170,19 +172,37 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={() => setIsModalOpen(true)}
-          style={{
-            pointerEvents: 'auto',
-            padding: '10px 20px',
-            borderRadius: 'var(--radius-lg)',
-            fontSize: '13.5px',
-          }}
-        >
-          + New Canvas
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', pointerEvents: 'auto' }}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')}
+            title={`Switch to ${mode === 'dark' ? 'Light' : 'Dark'} Mode`}
+            style={{
+              padding: '10px 12px',
+              borderRadius: 'var(--radius-lg)',
+              fontSize: '13px',
+              boxShadow: 'var(--shadow-topbar)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {mode === 'dark' ? <Sun size={16} weight="bold" /> : <Moon size={16} weight="bold" />}
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => setIsModalOpen(true)}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 'var(--radius-lg)',
+              fontSize: '13.5px',
+            }}
+          >
+            + New Canvas
+          </button>
+        </div>
       </nav>
 
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '110px 24px 80px 24px', width: '100%' }}>
@@ -258,8 +278,8 @@ export const DashboardPage: React.FC = () => {
                     transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
                     borderColor: isHovered ? 'var(--accent-border)' : 'var(--border)',
                     boxShadow: isHovered
-                      ? '0 24px 60px rgba(0,0,0,0.65), 0 0 32px rgba(34, 211, 238, 0.15)'
-                      : 'var(--shadow-heavy)',
+                      ? 'var(--shadow-heavy)'
+                      : 'var(--shadow-topbar)',
                   }}
                 >
                   <MiniCanvasPreview
