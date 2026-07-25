@@ -1299,6 +1299,26 @@ body[data-mode="eraser"] {
   div[style*="gridTemplateColumns"] {
     grid-template-columns: 1fr !important;
   }
+
+  .zoom-controls-wrapper {
+    bottom: 12px !important;
+    right: 12px !important;
+    left: 12px !important;
+    justify-content: center !important;
+    gap: 6px !important;
+  }
+
+  .pen-toolbar {
+    bottom: 74px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    max-width: calc(100vw - 24px) !important;
+    overflow-x: auto !important;
+  }
+
+  .coord-badge {
+    display: none !important;
+  }
 }
 
 @media (max-width: 480px) {

@@ -113,6 +113,7 @@ export const CanvasPage: React.FC = () => {
   type CanvasSnapshot = { strokes: InkStroke[]; cards: CodeCardData[]; stickies: StickyData[] };
   const historyStackRef = useRef<CanvasSnapshot[]>([]);
   const redoStackRef = useRef<CanvasSnapshot[]>([]);
+  const [, setHistoryVersion] = useState(0);
 
   const saveHistorySnapshot = useCallback(() => {
     historyStackRef.current.push({
@@ -124,6 +125,7 @@ export const CanvasPage: React.FC = () => {
     if (historyStackRef.current.length > 50) {
       historyStackRef.current.shift();
     }
+    setHistoryVersion(v => v + 1);
   }, [strokes, cards, stickies]);
 
   const handleUndo = useCallback(() => {
@@ -140,6 +142,7 @@ export const CanvasPage: React.FC = () => {
     setStrokes(prevSnapshot.strokes);
     setCards(prevSnapshot.cards);
     setStickies(prevSnapshot.stickies);
+    setHistoryVersion(v => v + 1);
     showToast('Undo');
   }, [strokes, cards, stickies, showToast]);
 
@@ -157,6 +160,7 @@ export const CanvasPage: React.FC = () => {
     setStrokes(nextSnapshot.strokes);
     setCards(nextSnapshot.cards);
     setStickies(nextSnapshot.stickies);
+    setHistoryVersion(v => v + 1);
     showToast('Redo');
   }, [strokes, cards, stickies, showToast]);
 
@@ -745,16 +749,43 @@ export const CanvasPage: React.FC = () => {
     const startX = (e.clientX - pan.x) / zoom;
     const startY = (e.clientY - pan.y) / zoom;
 
-    // Pen mode drawing
+    // Pen mode drawing with pointer capture & Bezier smoothing
     if (mode === 'pen') {
-      let d = `M ${startX} ${startY}`;
-      setCurrentStroke(d);
+      const targetElem = e.target as HTMLElement;
+      if (targetElem.setPointerCapture) {
+        try {
+          targetElem.setPointerCapture(e.pointerId);
+        } catch (_err) {
+          // ignore pointer capture error
+        }
+      }
+
+      const strokePoints: { x: number; y: number }[] = [{ x: startX, y: startY }];
+
+      const getSmoothPathStr = (pts: { x: number; y: number }[]) => {
+        if (pts.length === 0) return '';
+        if (pts.length < 2) return `M ${pts[0].x} ${pts[0].y} L ${pts[0].x} ${pts[0].y}`;
+        if (pts.length === 2) return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
+        let pathStr = `M ${pts[0].x} ${pts[0].y}`;
+        for (let i = 1; i < pts.length - 1; i++) {
+          const xc = (pts[i].x + pts[i + 1].x) / 2;
+          const yc = (pts[i].y + pts[i + 1].y) / 2;
+          pathStr += ` Q ${pts[i].x} ${pts[i].y}, ${xc} ${yc}`;
+        }
+        pathStr += ` L ${pts[pts.length - 1].x} ${pts[pts.length - 1].y}`;
+        return pathStr;
+      };
+
+      setCurrentStroke(getSmoothPathStr(strokePoints));
 
       const handleMove = (ev: PointerEvent) => {
         const curX = (ev.clientX - pan.x) / zoom;
         const curY = (ev.clientY - pan.y) / zoom;
-        d += ` L ${curX} ${curY}`;
-        setCurrentStroke(d);
+        const lastPt = strokePoints[strokePoints.length - 1];
+        if (!lastPt || Math.abs(lastPt.x - curX) > 0.5 || Math.abs(lastPt.y - curY) > 0.5) {
+          strokePoints.push({ x: curX, y: curY });
+          setCurrentStroke(getSmoothPathStr(strokePoints));
+        }
       };
 
       const handleUp = () => {
@@ -762,15 +793,26 @@ export const CanvasPage: React.FC = () => {
         window.removeEventListener('pointerup', handleUp);
         window.removeEventListener('pointercancel', handleUp);
 
-        saveHistorySnapshot();
-        const newStroke: InkStroke = {
-          id: `stroke-${Date.now()}`,
-          d,
-          color: penColor,
-          strokeWidth: penWidth,
-        };
-        setStrokes(prev => [...prev, newStroke]);
-        emitStrokeAdd(newStroke);
+        if (targetElem.releasePointerCapture) {
+          try {
+            targetElem.releasePointerCapture(e.pointerId);
+          } catch (_err) {
+            // ignore
+          }
+        }
+
+        const finalD = getSmoothPathStr(strokePoints);
+        if (strokePoints.length > 0) {
+          saveHistorySnapshot();
+          const newStroke: InkStroke = {
+            id: `stroke-${Date.now()}`,
+            d: finalD,
+            color: penColor,
+            strokeWidth: penWidth,
+          };
+          setStrokes(prev => [...prev, newStroke]);
+          emitStrokeAdd(newStroke);
+        }
         setCurrentStroke(null);
       };
 
@@ -1088,6 +1130,24 @@ export const CanvasPage: React.FC = () => {
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onResetZoom={handleResetZoom}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={historyStackRef.current.length > 0}
+        canRedo={redoStackRef.current.length > 0}
+        mode={mode === 'idle' ? 'select' : (mode as any)}
+        onSetMode={(m) => {
+          if (m === 'select') setMode('idle');
+          else setMode(m);
+        }}
+        onTriggerRadial={() => {
+          setRadialState({
+            open: true,
+            screenX: window.innerWidth / 2,
+            screenY: window.innerHeight / 2,
+            canvasX: (window.innerWidth / 2 - pan.x) / zoom,
+            canvasY: (window.innerHeight / 2 - pan.y) / zoom,
+          });
+        }}
       />
 
       <HintBar mode={mode} />
